@@ -1,4 +1,4 @@
-package com.biblioteca.acciones;
+package com.biblioteca.acciones.Usuarios;
 
 import com.biblioteca.base_datos.ConexionBaseDatos;
 import org.mindrot.jbcrypt.BCrypt;
