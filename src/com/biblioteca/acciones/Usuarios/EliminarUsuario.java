@@ -8,21 +8,59 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import javax.swing.border.TitledBorder;
 
 public class EliminarUsuario extends JPanel {
     private JTextField idUsuarioField;
+    private JButton eliminarButton;
 
     public EliminarUsuario() {
-        setLayout(new GridLayout(3, 1, 10, 10));
-        setBorder(BorderFactory.createTitledBorder("Eliminar Usuario"));
+        setLayout(new BorderLayout());
+        setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(100, 100, 100)), 
+                "Eliminar Usuario", TitledBorder.LEFT, TitledBorder.TOP, 
+                new Font("Arial", Font.BOLD, 16), new Color(50, 50, 50)));
 
-        add(new JLabel("ID Usuario:"));
-        idUsuarioField = new JTextField();
-        add(idUsuarioField);
+        // Panel central con ID del usuario
+        JPanel idPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        idPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        JButton eliminarButton = new JButton("Eliminar");
+        JLabel idLabel = new JLabel("ID Usuario:");
+        idLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        idPanel.add(idLabel);
+
+        idUsuarioField = new JTextField(15);
+        idUsuarioField.setFont(new Font("Arial", Font.PLAIN, 14));
+        idUsuarioField.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+        idPanel.add(idUsuarioField);
+
+        add(idPanel, BorderLayout.CENTER);
+
+        // Botón para eliminar
+        eliminarButton = new JButton("Eliminar");
+        eliminarButton.setFont(new Font("Arial", Font.BOLD, 14));
+        eliminarButton.setBackground(new Color(220, 53, 69)); // Rojo
+        eliminarButton.setForeground(Color.WHITE);
+        eliminarButton.setFocusPainted(false);
+        eliminarButton.setPreferredSize(new Dimension(150, 40));
+        eliminarButton.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.GRAY, 1),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        eliminarButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                eliminarButton.setBackground(new Color(176, 0, 32)); // Rojo oscuro al pasar
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                eliminarButton.setBackground(new Color(220, 53, 69)); // Color original
+            }
+        });
         eliminarButton.addActionListener(e -> eliminarUsuario());
-        add(eliminarButton);
+
+        // Panel inferior con botón
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        buttonPanel.add(eliminarButton);
+        add(buttonPanel, BorderLayout.SOUTH);
     }
 
     private void eliminarUsuario() {

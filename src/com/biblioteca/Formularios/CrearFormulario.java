@@ -1,6 +1,5 @@
 package com.biblioteca.Formularios;
 
-
 import com.biblioteca.base_datos.ConexionBaseDatos;
 
 import javax.swing.*;
@@ -8,6 +7,7 @@ import java.awt.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import javax.swing.border.TitledBorder;
 
 public class CrearFormulario extends JPanel {
     private JTextField nombreTablaField;
@@ -17,32 +17,52 @@ public class CrearFormulario extends JPanel {
 
     public CrearFormulario() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createTitledBorder("Crear Nuevo Formulario"));
+        setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(100, 100, 100)),
+                "Crear Nuevo Formulario", TitledBorder.LEFT, TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 16), new Color(50, 50, 50)));
 
+        // Panel superior con configuraciones
         JPanel configuracionPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        configuracionPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
-        configuracionPanel.add(new JLabel("Nombre del Formulario:"));
+        JLabel nombreTablaLabel = new JLabel("Nombre del Formulario:");
+        nombreTablaLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        configuracionPanel.add(nombreTablaLabel);
+
         nombreTablaField = new JTextField();
+        nombreTablaField.setFont(new Font("Arial", Font.PLAIN, 14));
+        nombreTablaField.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         configuracionPanel.add(nombreTablaField);
 
-        configuracionPanel.add(new JLabel("Número de Columnas Personalizadas:"));
+        JLabel numeroColumnasLabel = new JLabel("Número de Columnas Personalizadas:");
+        numeroColumnasLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        configuracionPanel.add(numeroColumnasLabel);
+
         numeroColumnasField = new JTextField();
+        numeroColumnasField.setFont(new Font("Arial", Font.PLAIN, 14));
+        numeroColumnasField.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         configuracionPanel.add(numeroColumnasField);
 
-        generarColumnasButton = new JButton("Generar Campos");
+        generarColumnasButton = createStyledButton("Generar Campos", new Color(34, 139, 34), new Color(0, 100, 0));
         generarColumnasButton.addActionListener(e -> generarCampos());
         configuracionPanel.add(generarColumnasButton);
 
         add(configuracionPanel, BorderLayout.NORTH);
 
+        // Panel central para columnas dinámicas
         columnasPanel = new JPanel();
         columnasPanel.setLayout(new BoxLayout(columnasPanel, BoxLayout.Y_AXIS));
+        columnasPanel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
         JScrollPane scrollPanel = new JScrollPane(columnasPanel);
+        scrollPanel.setBorder(BorderFactory.createLineBorder(Color.GRAY));
         add(scrollPanel, BorderLayout.CENTER);
 
-        crearTablaButton = new JButton("Crear Tabla");
+        // Botón inferior para crear tabla
+        crearTablaButton = createStyledButton("Crear Tabla", new Color(220, 53, 69), new Color(176, 0, 32));
         crearTablaButton.addActionListener(e -> crearTabla());
-        add(crearTablaButton, BorderLayout.SOUTH);
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        buttonPanel.add(crearTablaButton);
+        add(buttonPanel, BorderLayout.SOUTH);
     }
 
     private void generarCampos() {
@@ -50,10 +70,18 @@ public class CrearFormulario extends JPanel {
         try {
             int numeroColumnas = Integer.parseInt(numeroColumnasField.getText());
             for (int i = 0; i < numeroColumnas; i++) {
-                JPanel columnaPanel = new JPanel(new GridLayout(1, 2, 10, 10));
-                columnaPanel.add(new JLabel("Nombre de la Columna " + (i + 1) + ":"));
+                JPanel columnaPanel = new JPanel(new BorderLayout(10, 10));
+                columnaPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
+                JLabel columnaLabel = new JLabel("Nombre de la Columna " + (i + 1) + ":");
+                columnaLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+                columnaPanel.add(columnaLabel, BorderLayout.WEST);
+
                 JTextField nombreColumnaField = new JTextField();
-                columnaPanel.add(nombreColumnaField);
+                nombreColumnaField.setFont(new Font("Arial", Font.PLAIN, 14));
+                nombreColumnaField.setBorder(BorderFactory.createLineBorder(Color.GRAY));
+                columnaPanel.add(nombreColumnaField, BorderLayout.CENTER);
+
                 columnasPanel.add(columnaPanel);
             }
         } catch (NumberFormatException e) {
@@ -106,5 +134,28 @@ public class CrearFormulario extends JPanel {
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al crear la tabla: " + e.getMessage());
         }
+    }
+
+    private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setBackground(defaultColor);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setPreferredSize(new Dimension(150, 40));
+        button.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.GRAY, 1),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(hoverColor);
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(defaultColor);
+            }
+        });
+        return button;
     }
 }

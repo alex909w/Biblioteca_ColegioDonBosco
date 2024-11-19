@@ -16,6 +16,46 @@ public class GestionUsuarios {
         return rol.equals("Administrador") || rol.equals("Profesor") || rol.equals("Alumno");
     }
 
+    public boolean actualizarUsuario(String idUsuario, String nombre, String email, String telefono, String direccion, String rol) {
+    String query = "UPDATE usuarios SET nombre = ?, email = ?, telefono = ?, direccion = ?, rol = ? WHERE id_usuario = ?";
+    Connection conexion = null;
+
+    try {
+        conexion = ConexionBaseDatos.getConexion();
+        if (conexion == null || conexion.isClosed()) {
+            throw new SQLException("Conexión cerrada o no disponible.");
+        }
+
+        try (PreparedStatement statement = conexion.prepareStatement(query)) {
+            statement.setString(1, nombre);
+            statement.setString(2, email);
+            statement.setString(3, telefono);
+            statement.setString(4, direccion);
+            statement.setString(5, rol);
+            statement.setString(6, idUsuario);
+
+            return statement.executeUpdate() > 0;
+        }
+    } catch (SQLException e) {
+        System.err.println("Error al actualizar el usuario: " + e.getMessage());
+        return false;
+    } finally {
+        cerrarConexion(conexion);
+    }
+}
+
+    private void cerrarConexion(Connection conexion) {
+    if (conexion != null) {
+        try {
+            if (!conexion.isClosed()) {
+                conexion.close();
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al cerrar la conexión: " + e.getMessage());
+        }
+    }
+}
+
    public boolean registrarUsuario(String nombre, String email, String contraseña, String rol,
                                 String telefono, String direccion, String preguntaSeguridad, String respuestaSeguridad) {
     String idUsuario = generarIdUsuario(rol); // Generar el ID basado en la categoría
@@ -27,26 +67,34 @@ public class GestionUsuarios {
     String query = "INSERT INTO usuarios (id_usuario, nombre, email, contraseña, rol, telefono, direccion, pregunta_seguridad, respuesta_seguridad) " +
                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    try (Connection conexion = ConexionBaseDatos.getConexion();
-         PreparedStatement statement = conexion.prepareStatement(query)) {
+    Connection conexion = null;
+    try {
+        conexion = ConexionBaseDatos.getConexion();
+        if (conexion == null || conexion.isClosed()) {
+            throw new SQLException("Conexión cerrada o no disponible.");
+        }
 
-        statement.setString(1, idUsuario);
-        statement.setString(2, nombre);
-        statement.setString(3, email);
-        statement.setString(4, contraseña);
-        statement.setString(5, rol);
-        statement.setString(6, telefono);
-        statement.setString(7, direccion);
-        statement.setString(8, preguntaSeguridad);
-        statement.setString(9, respuestaSeguridad);
+        try (PreparedStatement statement = conexion.prepareStatement(query)) {
+            statement.setString(1, idUsuario);
+            statement.setString(2, nombre);
+            statement.setString(3, email);
+            statement.setString(4, contraseña);
+            statement.setString(5, rol);
+            statement.setString(6, telefono);
+            statement.setString(7, direccion);
+            statement.setString(8, preguntaSeguridad);
+            statement.setString(9, respuestaSeguridad);
 
-        return statement.executeUpdate() > 0;
-
+            return statement.executeUpdate() > 0;
+        }
     } catch (SQLException e) {
         System.err.println("Error al registrar el usuario: " + e.getMessage());
         return false;
+    } finally {
+        cerrarConexion(conexion);
     }
 }
+
 
     public boolean editarUsuario(String idUsuario, String nuevoNombre, String nuevoTelefono, String nuevaDireccion, String nuevoRol) {
     String query = "UPDATE usuarios SET nombre = ?, telefono = ?, direccion = ?, rol = ? WHERE id_usuario = ?";
