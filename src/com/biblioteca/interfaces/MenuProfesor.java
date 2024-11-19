@@ -43,6 +43,9 @@ public class MenuProfesor extends JFrame {
         // Configurar el menú
         configurarMenu();
 
+        // Crear botón "Salir" fijo en la parte inferior
+        agregarBotonSalir();
+
         setLocationRelativeTo(null); // Centrar la ventana
         setVisible(true);
     }
@@ -67,10 +70,23 @@ public class MenuProfesor extends JFrame {
         botonMenu.setFont(new Font("Arial", Font.BOLD, 16));
         botonMenu.setAlignmentX(Component.LEFT_ALIGNMENT);
         botonMenu.setBackground(new Color(200, 200, 200));
+        botonMenu.setForeground(Color.BLACK);
+        botonMenu.setPreferredSize(new Dimension(250, 40));  // Tamaño fijo para todos los botones
+        botonMenu.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que todos los botones tengan el mismo tamaño
         botonMenu.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Color.GRAY, 1),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
+
+        // Agregar el efecto de hover (cambio de color al pasar el ratón sobre el botón)
+        botonMenu.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                botonMenu.setBackground(new Color(150, 150, 150));  // Color más oscuro al pasar el ratón
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                botonMenu.setBackground(new Color(200, 200, 200));  // Color original
+            }
+        });
 
         JPanel subMenuPanel = new JPanel();
         subMenuPanel.setLayout(new BoxLayout(subMenuPanel, BoxLayout.Y_AXIS));
@@ -82,6 +98,8 @@ public class MenuProfesor extends JFrame {
             botonSubmenu.setAlignmentX(Component.LEFT_ALIGNMENT);
             botonSubmenu.setBackground(new Color(240, 240, 240));
             botonSubmenu.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 10));
+            botonSubmenu.setPreferredSize(new Dimension(250, 40));  // Hacer que los submenús también tengan el mismo tamaño
+            botonSubmenu.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que todos los submenús tengan el mismo tamaño
             botonSubmenu.addActionListener(e -> ejecutarFuncionProfesor(submenu));
             subMenuPanel.add(botonSubmenu);
         }
@@ -107,6 +125,36 @@ public class MenuProfesor extends JFrame {
         for (JPanel submenu : submenusVisibles.values()) {
             submenu.setVisible(false);
         }
+    }
+
+    private void agregarBotonSalir() {
+        // Crear el botón "Salir"
+        JButton botonSalir = new JButton("Salir");
+        botonSalir.setFont(new Font("Arial", Font.BOLD, 16));
+        botonSalir.setAlignmentX(Component.LEFT_ALIGNMENT);
+        botonSalir.setBackground(new Color(255, 100, 100)); // Color rojo claro
+        botonSalir.setForeground(Color.WHITE);
+        botonSalir.setPreferredSize(new Dimension(250, 40));  // El tamaño del botón "Salir" es el mismo que los otros
+        botonSalir.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que tenga el mismo tamaño que los demás botones
+        botonSalir.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(Color.GRAY, 1),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+        ));
+
+        botonSalir.addActionListener(e -> {
+            // Cerrar la ventana actual y abrir la ventana de login
+            dispose(); // Cierra la ventana de Menú Profesor
+            new LoginBiblioteca(); // Abre la ventana de Login
+        });
+
+        // Crear un Filler para empujar el botón "Salir" hasta el fondo
+        Box.Filler filler = new Box.Filler(new Dimension(0, 0), new Dimension(0, Integer.MAX_VALUE), new Dimension(0, 0));
+
+        // Añadir el Filler al panel izquierdo para empujar el botón al final
+        panelIzquierdo.add(Box.createVerticalGlue()); // Esto empuja el botón "Salir" hacia abajo
+
+        // Añadir el botón Salir al panel izquierdo
+        panelIzquierdo.add(botonSalir);
     }
 
     private void ejecutarFuncionProfesor(String submenu) {

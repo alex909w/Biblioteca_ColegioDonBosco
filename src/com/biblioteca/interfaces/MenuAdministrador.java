@@ -95,10 +95,23 @@ public class MenuAdministrador extends JFrame {
         botonMenu.setFont(new Font("Arial", Font.BOLD, 16));
         botonMenu.setAlignmentX(Component.LEFT_ALIGNMENT);
         botonMenu.setBackground(new Color(200, 200, 200));
+        botonMenu.setForeground(Color.BLACK);
+        botonMenu.setPreferredSize(new Dimension(250, 40));  // Tamaño fijo para todos los botones
+        botonMenu.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que todos tengan el mismo tamaño
         botonMenu.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Color.GRAY, 1),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
+
+        // Agregar el efecto de hover (cambio de color al pasar el ratón sobre el botón)
+        botonMenu.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                botonMenu.setBackground(new Color(150, 150, 150));  // Color más oscuro al pasar el ratón
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                botonMenu.setBackground(new Color(200, 200, 200));  // Color original
+            }
+        });
 
         JPanel subMenuPanel = new JPanel();
         subMenuPanel.setLayout(new BoxLayout(subMenuPanel, BoxLayout.Y_AXIS));
@@ -110,6 +123,8 @@ public class MenuAdministrador extends JFrame {
             botonSubmenu.setAlignmentX(Component.LEFT_ALIGNMENT);
             botonSubmenu.setBackground(new Color(240, 240, 240));
             botonSubmenu.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 10));
+            botonSubmenu.setPreferredSize(new Dimension(250, 40));  // Hacer que los submenús también tengan el mismo tamaño
+            botonSubmenu.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que todos los submenús tengan el mismo tamaño
             botonSubmenu.addActionListener(e -> ejecutarFuncionAdministrador(submenu));
             subMenuPanel.add(botonSubmenu);
         }
@@ -144,6 +159,8 @@ public class MenuAdministrador extends JFrame {
         botonSalir.setAlignmentX(Component.LEFT_ALIGNMENT);
         botonSalir.setBackground(new Color(255, 100, 100)); // Color rojo claro
         botonSalir.setForeground(Color.WHITE);
+        botonSalir.setPreferredSize(new Dimension(250, 40));  // El tamaño del botón "Salir" es el mismo que los otros
+        botonSalir.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que tenga el mismo tamaño que los demás botones
         botonSalir.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Color.GRAY, 1),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
