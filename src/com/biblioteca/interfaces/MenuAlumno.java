@@ -7,6 +7,7 @@ import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
 import com.biblioteca.acciones.Prestamos.RegistrarPrestamo;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,17 +15,25 @@ public class MenuAlumno extends JFrame {
     private JPanel panelCentral;
     private JPanel panelIzquierdo;
     private Map<String, JPanel> submenusVisibles;
-
+    
+        private final Color COLOR_PRIMARIO = new Color(51, 102, 153);
+    private final Color FONDO_LATERAL = new Color(248, 249, 250);
+    private final Color COLOR_HOVER = new Color(233, 236, 239);
+    private final Font FUENTE_PRINCIPAL = new Font("Segoe UI", Font.PLAIN, 14);
+    private final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 24);
+    
     public MenuAlumno() {
         setTitle("Menú Principal - Rol: Alumno");
         setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-
+            add(crearPanelSuperior(), BorderLayout.NORTH);
+            
         // Panel izquierdo (Menú Vertical)
         panelIzquierdo = new JPanel();
         panelIzquierdo.setLayout(new BoxLayout(panelIzquierdo, BoxLayout.Y_AXIS));
         panelIzquierdo.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        panelIzquierdo.setBackground(FONDO_LATERAL);
         JScrollPane scrollPanelIzquierdo = new JScrollPane(panelIzquierdo);
         scrollPanelIzquierdo.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         add(scrollPanelIzquierdo, BorderLayout.WEST);
@@ -47,6 +56,20 @@ public class MenuAlumno extends JFrame {
         setLocationRelativeTo(null); // Centrar la ventana
         setVisible(true);
     }
+    
+        private JPanel crearPanelSuperior() {
+        JPanel panelSuperior = new JPanel(new BorderLayout());
+        panelSuperior.setBackground(COLOR_PRIMARIO);
+        panelSuperior.setPreferredSize(new Dimension(0, 60));
+        panelSuperior.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+
+        JLabel lblTitulo = new JLabel("Biblioteca Colegio Amigos De Don Bosco");
+        lblTitulo.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        lblTitulo.setForeground(Color.WHITE);
+        panelSuperior.add(lblTitulo, BorderLayout.WEST);
+
+        return panelSuperior;
+    }
 
     private void configurarMenu() {
         agregarBotonMenu("Consultar Ejemplares", new String[]{
@@ -62,26 +85,28 @@ public class MenuAlumno extends JFrame {
 
     private void agregarBotonMenu(String titulo, String[] submenus) {
         JButton botonMenu = new JButton(titulo);
-        botonMenu.setFont(new Font("Arial", Font.BOLD, 16));
-        botonMenu.setAlignmentX(Component.LEFT_ALIGNMENT);
-        botonMenu.setBackground(new Color(200, 200, 200));
-        botonMenu.setForeground(Color.BLACK);
-        botonMenu.setPreferredSize(new Dimension(250, 40));  // Tamaño fijo para todos los botones
-        botonMenu.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que todos los botones tengan el mismo tamaño
-        botonMenu.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.GRAY, 1),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
+        botonMenu.setHorizontalAlignment(SwingConstants.LEFT);
+        botonMenu.setPreferredSize(new Dimension(250, 40));
+        botonMenu.setMaximumSize(new Dimension(250, 40));
+        botonMenu.setBackground(FONDO_LATERAL);
+        botonMenu.setFont(FUENTE_PRINCIPAL);
+        botonMenu.setForeground(new Color(33, 37, 41));
+        botonMenu.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 5));
+        botonMenu.setFocusPainted(false);
 
         // Agregar el efecto de hover (cambio de color al pasar el ratón sobre el botón)
         botonMenu.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                botonMenu.setBackground(new Color(150, 150, 150));  // Color más oscuro al pasar el ratón
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                botonMenu.setBackground(COLOR_HOVER);
             }
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                botonMenu.setBackground(new Color(200, 200, 200));  // Color original
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                botonMenu.setBackground(FONDO_LATERAL);
             }
         });
+
 
         JPanel subMenuPanel = new JPanel();
         subMenuPanel.setLayout(new BoxLayout(subMenuPanel, BoxLayout.Y_AXIS));
@@ -91,13 +116,26 @@ public class MenuAlumno extends JFrame {
             JButton botonSubmenu = new JButton(submenu);
             botonSubmenu.setFont(new Font("Arial", Font.PLAIN, 14));
             botonSubmenu.setAlignmentX(Component.LEFT_ALIGNMENT);
-            botonSubmenu.setBackground(new Color(240, 240, 240));
+            botonSubmenu.setBackground(FONDO_LATERAL);
             botonSubmenu.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 10));
             botonSubmenu.setPreferredSize(new Dimension(250, 40));  // Hacer que los submenús también tengan el mismo tamaño
             botonSubmenu.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que todos los submenús tengan el mismo tamaño
             botonSubmenu.addActionListener(e -> ejecutarFuncionAlumno(submenu));
             subMenuPanel.add(botonSubmenu);
+            
+            botonSubmenu.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                botonSubmenu.setBackground(COLOR_HOVER);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                botonSubmenu.setBackground(FONDO_LATERAL);
+            }
+            });
         }
+
 
         botonMenu.addActionListener(e -> {
             boolean esVisible = subMenuPanel.isVisible();
@@ -127,14 +165,25 @@ public class MenuAlumno extends JFrame {
         JButton botonSalir = new JButton("Salir");
         botonSalir.setFont(new Font("Arial", Font.BOLD, 16));
         botonSalir.setAlignmentX(Component.LEFT_ALIGNMENT);
-        botonSalir.setBackground(new Color(255, 100, 100)); // Color rojo claro
+        botonSalir.setBackground(new Color(193, 42, 46)); // Color rojo claro
         botonSalir.setForeground(Color.WHITE);
-        botonSalir.setPreferredSize(new Dimension(250, 40));  // El tamaño del botón "Salir" es el mismo que los otros
-        botonSalir.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que tenga el mismo tamaño que los demás botones
+        botonSalir.setPreferredSize(new Dimension(100, 40));  // El tamaño del botón "Salir" es el mismo que los otros
+        botonSalir.setMaximumSize(new Dimension(100, 40));  // Asegurarse de que tenga el mismo tamaño que los demás botones
         botonSalir.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Color.GRAY, 1),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
+                    botonSalir.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                botonSalir.setBackground(new Color(191, 1, 3));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                botonSalir.setBackground(new Color(193, 42, 46));
+            }
+            });
 
         botonSalir.addActionListener(e -> {
             // Cerrar la ventana actual y abrir la ventana de login
