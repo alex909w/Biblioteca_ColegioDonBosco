@@ -145,101 +145,94 @@ public class EliminarArticulo extends JPanel {
         }
     }
 
-    /**
-     * Carga todos los datos de la tabla seleccionada y los muestra en un JTable con formato.
-     */
-    private void cargarTabla() {
-        tablaSeleccionada = (String) tablasComboBox.getSelectedItem();
-        if (tablaSeleccionada == null || tablaSeleccionada.equals("Opciones")) {
-            JOptionPane.showMessageDialog(this, "Seleccione una opción válida.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // Limpiar la tabla antes de cargar nuevos datos
-        tableModel.setRowCount(0);
-        tableModel.setColumnCount(0);
-        eliminarButton.setEnabled(false);
-        columnaID = "";
-
-        try (Connection conn = ConexionBaseDatos.getConexion()) {
-            // Obtener las columnas de la tabla
-            String describeQuery = "DESCRIBE " + tablaSeleccionada;
-            try (PreparedStatement stmt = conn.prepareStatement(describeQuery);
-                 ResultSet rs = stmt.executeQuery()) {
-
-                // Crear el modelo para el JTable
-                DefaultTableModel modelo = new DefaultTableModel();
-                // Añadir columnas al modelo y detectar la columna ID
-                while (rs.next()) {
-                    String nombreColumna = rs.getString("Field");
-                    String key = rs.getString("Key");
-                    String displayName = nombreColumna;
-
-                    if (key.equalsIgnoreCase("PRI")) {
-                        displayName = "ID";
-                        columnaID = nombreColumna; // Guardar el nombre real de la columna ID
-                    } else {
-                        displayName = formatString(nombreColumna);
-                    }
-
-                    modelo.addColumn(displayName);
-                }
-
-                // Verificar si se detectó una columna ID
-                if (columnaID.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "No se encontró una columna primaria (ID) en la tabla seleccionada.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-
-                // Obtener los datos de la tabla
-                String dataQuery = "SELECT * FROM " + tablaSeleccionada;
-                try (PreparedStatement dataStmt = conn.prepareStatement(dataQuery);
-                     ResultSet dataRs = dataStmt.executeQuery()) {
-
-                    while (dataRs.next()) {
-                        Object[] rowData = new Object[modelo.getColumnCount()];
-                        for (int i = 0; i < modelo.getColumnCount(); i++) {
-                            String columnName = modelo.getColumnName(i);
-                            if (columnName.equalsIgnoreCase("ID")) {
-                                rowData[i] = dataRs.getString(columnaID);
-                            } else {
-                                // Obtener el nombre real de la columna
-                                String nombreRealColumna = obtenerNombreColumnaReal(tablaSeleccionada, columnName);
-                                rowData[i] = dataRs.getString(nombreRealColumna);
-                            }
-                        }
-                        modelo.addRow(rowData);
-                    }
-                }
-
-                // Configurar el modelo en el JTable
-                tableModel = modelo;
-                tablaDatos.setModel(tableModel);
-
-                // Configurar propiedades del JTable
-                tablaDatos.getColumnModel().getColumn(0).setPreferredWidth(100); // Ajustar ancho de la columna ID
-                for (int i = 1; i < tablaDatos.getColumnCount(); i++) {
-                    tablaDatos.getColumnModel().getColumn(i).setPreferredWidth(150); // Ajustar ancho de otras columnas
-                }
-
-                // Añadir listener para la selección de filas
-                tablaDatos.getSelectionModel().addListSelectionListener(event -> {
-                    if (!event.getValueIsAdjusting() && tablaDatos.getSelectedRow() != -1) {
-                        eliminarButton.setEnabled(true);
-                    } else {
-                        eliminarButton.setEnabled(false);
-                    }
-                });
-
-                JOptionPane.showMessageDialog(this, "Datos cargados exitosamente en la tabla.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-
-            } catch (SQLException ex) {
-                JOptionPane.showMessageDialog(this, "Error al cargar datos de la tabla: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error al conectar a la base de datos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
+   private void cargarTabla() {
+    tablaSeleccionada = (String) tablasComboBox.getSelectedItem();
+    if (tablaSeleccionada == null || tablaSeleccionada.equals("Opciones")) {
+        JOptionPane.showMessageDialog(this, "Seleccione una opción válida.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+        return;
     }
+
+    // Limpiar la tabla antes de cargar nuevos datos
+    tableModel.setRowCount(0);
+    tableModel.setColumnCount(0);
+    eliminarButton.setEnabled(false);
+    columnaID = "";
+
+    try (Connection conn = ConexionBaseDatos.getConexion()) {
+        // Obtener las columnas de la tabla
+        String describeQuery = "DESCRIBE " + tablaSeleccionada;
+        try (PreparedStatement stmt = conn.prepareStatement(describeQuery);
+             ResultSet rs = stmt.executeQuery()) {
+
+            // Crear el modelo para el JTable
+            tableModel = new DefaultTableModel();
+
+            while (rs.next()) {
+                String nombreColumna = rs.getString("Field");
+                String key = rs.getString("Key");
+
+                if (key.equalsIgnoreCase("PRI")) {
+                    columnaID = nombreColumna; // Guardar la columna ID primaria
+                    tableModel.addColumn("ID"); // Mostrar como "ID" en el JTable
+                } else {
+                    tableModel.addColumn(formatString(nombreColumna)); // Formatear nombre amigable
+                }
+            }
+
+            // Verificar si se detectó una columna primaria
+            if (columnaID.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No se encontró una columna primaria (ID) en la tabla seleccionada.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            // Obtener los datos de la tabla
+            String dataQuery = "SELECT * FROM " + tablaSeleccionada;
+            try (PreparedStatement dataStmt = conn.prepareStatement(dataQuery);
+                 ResultSet dataRs = dataStmt.executeQuery()) {
+
+                while (dataRs.next()) {
+                    Object[] rowData = new Object[tableModel.getColumnCount()];
+                    for (int i = 0; i < tableModel.getColumnCount(); i++) {
+                        String columnName = tableModel.getColumnName(i);
+                        if (columnName.equalsIgnoreCase("ID")) {
+                            rowData[i] = dataRs.getString(columnaID); // Obtener el valor de la columna primaria
+                        } else {
+                            String realColumnName = columnName.replace(" ", "_").toLowerCase(); // Mapear nombre amigable al real
+                            rowData[i] = dataRs.getString(realColumnName);
+                        }
+                    }
+                    tableModel.addRow(rowData);
+                }
+            }
+
+            // Asignar el modelo al JTable
+            tablaDatos.setModel(tableModel);
+
+            // Configurar propiedades del JTable
+            tablaDatos.getColumnModel().getColumn(0).setPreferredWidth(100); // Ajustar ancho de la columna ID
+            for (int i = 1; i < tablaDatos.getColumnCount(); i++) {
+                tablaDatos.getColumnModel().getColumn(i).setPreferredWidth(150); // Ajustar ancho de otras columnas
+            }
+
+            // Listener para habilitar el botón Eliminar al seleccionar una fila
+            tablaDatos.getSelectionModel().addListSelectionListener(event -> {
+                if (!event.getValueIsAdjusting() && tablaDatos.getSelectedRow() != -1) {
+                    eliminarButton.setEnabled(true);
+                } else {
+                    eliminarButton.setEnabled(false);
+                }
+            });
+
+            JOptionPane.showMessageDialog(this, "Datos cargados exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al obtener columnas de la tabla: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    } catch (SQLException ex) {
+        JOptionPane.showMessageDialog(this, "Error al conectar a la base de datos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+
 
     /**
      * Obtiene el nombre real de la columna en la base de datos basado en el nombre mostrado en el JTable.

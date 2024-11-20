@@ -2,9 +2,7 @@ package com.biblioteca.interfaces;
 
 import com.biblioteca.acciones.Devoluciones.RegistrarDevolucion;
 import com.biblioteca.acciones.Mora.VerMoraPendiente;
-import com.biblioteca.acciones.Prestamos.BuscarPorAutor;
-import com.biblioteca.acciones.Prestamos.BuscarPorTitulo;
-import com.biblioteca.acciones.Prestamos.FiltrarPorEstado;
+import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
 import com.biblioteca.acciones.Prestamos.RegistrarPrestamo;
 import javax.swing.*;
@@ -29,10 +27,8 @@ public class MenuProfesor extends JFrame {
         setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-            add(crearPanelSuperior(), BorderLayout.NORTH);
+        add(crearPanelSuperior(), BorderLayout.NORTH);
 
-
-        // Panel izquierdo (Menú Vertical)
         panelIzquierdo = new JPanel();
         panelIzquierdo.setLayout(new BoxLayout(panelIzquierdo, BoxLayout.Y_AXIS));
         panelIzquierdo.setBackground(FONDO_LATERAL);
@@ -41,22 +37,15 @@ public class MenuProfesor extends JFrame {
         scrollPanelIzquierdo.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         add(scrollPanelIzquierdo, BorderLayout.WEST);
 
-        // Panel central
         panelCentral = new JPanel();
         panelCentral.setLayout(new BorderLayout());
         panelCentral.setBorder(BorderFactory.createTitledBorder("Contenido"));
         add(panelCentral, BorderLayout.CENTER);
 
-        // Mapa para controlar submenús visibles
         submenusVisibles = new HashMap<>();
-
-        // Configurar el menú
         configurarMenu();
-
-        // Crear botón "Salir" fijo en la parte inferior
         agregarBotonSalir();
-
-        setLocationRelativeTo(null); // Centrar la ventana
+        setLocationRelativeTo(null);
         setVisible(true);
     }
     
@@ -76,7 +65,7 @@ public class MenuProfesor extends JFrame {
 
     private void configurarMenu() {
         agregarBotonMenu("Consultar Ejemplares", new String[]{
-            "Buscar por Título", "Buscar por Autor", "Filtrar por Estado"
+            "Buscar por Título, Autor o Estado"
         });
         agregarBotonMenu("Gestión de Préstamos", new String[]{
             "Registrar Préstamos", "Ver Historial de Préstamos"
@@ -100,7 +89,6 @@ public class MenuProfesor extends JFrame {
         botonMenu.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 5));
         botonMenu.setFocusPainted(false);
 
-        // Agregar el efecto de hover (cambio de color al pasar el ratón sobre el botón)
         botonMenu.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -123,21 +111,21 @@ public class MenuProfesor extends JFrame {
             botonSubmenu.setAlignmentX(Component.LEFT_ALIGNMENT);
             botonSubmenu.setBackground(FONDO_LATERAL);
             botonSubmenu.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 10));
-            botonSubmenu.setPreferredSize(new Dimension(250, 40));  // Hacer que los submenús también tengan el mismo tamaño
-            botonSubmenu.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que todos los submenús tengan el mismo tamaño
+            botonSubmenu.setPreferredSize(new Dimension(250, 40));
+            botonSubmenu.setMaximumSize(new Dimension(250, 40));
             botonSubmenu.addActionListener(e -> ejecutarFuncionProfesor(submenu));
             subMenuPanel.add(botonSubmenu);
-            
-            botonSubmenu.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                botonSubmenu.setBackground(COLOR_HOVER);
-            }
 
-            @Override
-            public void mouseExited(MouseEvent e) {
-                botonSubmenu.setBackground(FONDO_LATERAL);
-            }
+            botonSubmenu.addMouseListener(new java.awt.event.MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    botonSubmenu.setBackground(COLOR_HOVER);
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    botonSubmenu.setBackground(FONDO_LATERAL);
+                }
             });
         }
 
@@ -151,10 +139,7 @@ public class MenuProfesor extends JFrame {
 
         panelIzquierdo.add(botonMenu);
         panelIzquierdo.add(subMenuPanel);
-
         submenusVisibles.put(titulo, subMenuPanel);
-
-        // Espaciado entre menús
         panelIzquierdo.add(Box.createVerticalStrut(10));
     }
 
@@ -165,17 +150,16 @@ public class MenuProfesor extends JFrame {
     }
 
     private void agregarBotonSalir() {
-        // Crear el botón "Salir"
         JButton botonSalir = new JButton("Salir");
         botonSalir.setFont(FUENTE_PRINCIPAL);
         botonSalir.setAlignmentX(Component.LEFT_ALIGNMENT);
-        botonSalir.setBackground(new Color(255, 100, 100)); // Color rojo claro
+        botonSalir.setBackground(new Color(193, 42, 46));
         botonSalir.setForeground(Color.WHITE);
-        botonSalir.setPreferredSize(new Dimension(250, 40));  // El tamaño del botón "Salir" es el mismo que los otros
-        botonSalir.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que tenga el mismo tamaño que los demás botones
+        botonSalir.setPreferredSize(new Dimension(250, 40));
+        botonSalir.setMaximumSize(new Dimension(250, 40));
         botonSalir.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.GRAY, 1),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            BorderFactory.createLineBorder(Color.GRAY, 1),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
         botonSalir.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
@@ -187,38 +171,25 @@ public class MenuProfesor extends JFrame {
             public void mouseExited(MouseEvent e) {
                 botonSalir.setBackground(new Color(193, 42, 46));
             }
-            });
-
-        botonSalir.addActionListener(e -> {
-            // Cerrar la ventana actual y abrir la ventana de login
-            dispose(); // Cierra la ventana de Menú Profesor
-            new LoginBiblioteca(); // Abre la ventana de Login
         });
 
-        // Crear un Filler para empujar el botón "Salir" hasta el fondo
-        Box.Filler filler = new Box.Filler(new Dimension(0, 0), new Dimension(0, Integer.MAX_VALUE), new Dimension(0, 0));
+        botonSalir.addActionListener(e -> {
+            dispose();
+            new LoginBiblioteca();
+        });
 
-        // Añadir el Filler al panel izquierdo para empujar el botón al final
-        panelIzquierdo.add(Box.createVerticalGlue()); // Esto empuja el botón "Salir" hacia abajo
-
-        // Añadir el botón Salir al panel izquierdo
+        panelIzquierdo.add(Box.createVerticalGlue());
         panelIzquierdo.add(botonSalir);
     }
 
     private void ejecutarFuncionProfesor(String submenu) {
-        panelCentral.removeAll(); // Limpiar contenido previo
+        panelCentral.removeAll();
 
         JPanel nuevoPanel = null;
 
         switch (submenu) {
-            case "Buscar por Título":
-                nuevoPanel = new BuscarPorTitulo();
-                break;
-            case "Buscar por Autor":
-                nuevoPanel = new BuscarPorAutor();
-                break;
-            case "Filtrar por Estado":
-                nuevoPanel = new FiltrarPorEstado();
+            case "Buscar por Título, Autor o Estado":
+                nuevoPanel = new BuscarPorTituloAutorEstado();
                 break;
             case "Registrar Préstamos":
                 nuevoPanel = new RegistrarPrestamo();
@@ -246,6 +217,6 @@ public class MenuProfesor extends JFrame {
     }
 
     public static void main(String[] args) {
-        new MenuProfesor(); // Prueba como Profesor
+        new MenuProfesor();
     }
 }

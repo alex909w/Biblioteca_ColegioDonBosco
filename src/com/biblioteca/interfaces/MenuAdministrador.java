@@ -8,9 +8,7 @@ import com.biblioteca.Formularios.EditarFormulario;
 import com.biblioteca.Formularios.EliminarFormulario;
 import com.biblioteca.acciones.Devoluciones.RegistrarDevolucion;
 import com.biblioteca.acciones.Mora.VerMoraPendiente;
-import com.biblioteca.acciones.Prestamos.BuscarPorAutor;
-import com.biblioteca.acciones.Prestamos.BuscarPorTitulo;
-import com.biblioteca.acciones.Prestamos.FiltrarPorEstado;
+import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
 import com.biblioteca.acciones.Prestamos.RegistrarPrestamo;
 import com.biblioteca.acciones.Usuarios.EditarUsuario;
@@ -38,7 +36,7 @@ public class MenuAdministrador extends JFrame {
         setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-            add(crearPanelSuperior(), BorderLayout.NORTH);
+        add(crearPanelSuperior(), BorderLayout.NORTH);
 
         // Panel izquierdo (Menú Vertical)
         panelIzquierdo = new JPanel();
@@ -70,7 +68,7 @@ public class MenuAdministrador extends JFrame {
         setVisible(true);
     }
     
-        private JPanel crearPanelSuperior() {
+    private JPanel crearPanelSuperior() {
         JPanel panelSuperior = new JPanel(new BorderLayout());
         panelSuperior.setBackground(COLOR_PRIMARIO);
         panelSuperior.setPreferredSize(new Dimension(0, 60));
@@ -98,7 +96,7 @@ public class MenuAdministrador extends JFrame {
         });
 
         agregarBotonMenu("Consultar Ejemplares", new String[]{
-            "Buscar por Título", "Buscar por Autor", "Filtrar por Estado"
+            "Buscar por Título, Autor o Estado"
         });
 
         agregarBotonMenu("Gestión de Ejemplares", new String[]{
@@ -125,7 +123,7 @@ public class MenuAdministrador extends JFrame {
         botonMenu.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 5));
         botonMenu.setFocusPainted(false);
 
-        // Agregar el efecto de hover (cambio de color al pasar el ratón sobre el botón)
+        // Efecto de hover
         botonMenu.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -148,21 +146,22 @@ public class MenuAdministrador extends JFrame {
             botonSubmenu.setAlignmentX(Component.LEFT_ALIGNMENT);
             botonSubmenu.setBackground(FONDO_LATERAL);
             botonSubmenu.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 10));
-            botonSubmenu.setPreferredSize(new Dimension(250, 40));  // Hacer que los submenús también tengan el mismo tamaño
-            botonSubmenu.setMaximumSize(new Dimension(250, 40));  // Asegurarse de que todos los submenús tengan el mismo tamaño
+            botonSubmenu.setPreferredSize(new Dimension(250, 40));
+            botonSubmenu.setMaximumSize(new Dimension(250, 40));
             botonSubmenu.addActionListener(e -> ejecutarFuncionAdministrador(submenu));
             subMenuPanel.add(botonSubmenu);
             
+            // Efecto de hover
             botonSubmenu.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                botonSubmenu.setBackground(COLOR_HOVER);
-            }
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    botonSubmenu.setBackground(COLOR_HOVER);
+                }
 
-            @Override
-            public void mouseExited(MouseEvent e) {
-                botonSubmenu.setBackground(FONDO_LATERAL);
-            }
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    botonSubmenu.setBackground(FONDO_LATERAL);
+                }
             });
         }
 
@@ -190,19 +189,20 @@ public class MenuAdministrador extends JFrame {
     }
 
     private void agregarBotonSalir() {
-        // Crear el botón "Salir"
         JButton botonSalir = new JButton("Salir");
         botonSalir.setFont(FUENTE_PRINCIPAL);
         botonSalir.setAlignmentX(Component.LEFT_ALIGNMENT);
-        botonSalir.setBackground(new Color(193, 42, 46)); // Color rojo claro
+        botonSalir.setBackground(new Color(193, 42, 46));
         botonSalir.setForeground(Color.WHITE);
-        botonSalir.setPreferredSize(new Dimension(100, 40));  // El tamaño del botón "Salir" es el mismo que los otros
-        botonSalir.setMaximumSize(new Dimension(100, 40));  // Asegurarse de que tenga el mismo tamaño que los demás botones
+        botonSalir.setPreferredSize(new Dimension(100, 40));
+        botonSalir.setMaximumSize(new Dimension(100, 40));
         botonSalir.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Color.GRAY, 1),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
-                    botonSalir.addMouseListener(new java.awt.event.MouseAdapter() {
+
+        // Efecto de hover
+        botonSalir.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
                 botonSalir.setBackground(new Color(191, 1, 3));
@@ -212,26 +212,19 @@ public class MenuAdministrador extends JFrame {
             public void mouseExited(MouseEvent e) {
                 botonSalir.setBackground(new Color(193, 42, 46));
             }
-            });
-
-        botonSalir.addActionListener(e -> {
-            // Cerrar la ventana actual y abrir la ventana de login
-            dispose(); // Cierra la ventana de Menú Administrador
-            new LoginBiblioteca(); // Abre la ventana de Login
         });
 
-        // Crear un Filler para empujar el botón "Salir" hasta el fondo
-        Box.Filler filler = new Box.Filler(new Dimension(0, 0), new Dimension(0, Integer.MAX_VALUE), new Dimension(0, 0));
+        botonSalir.addActionListener(e -> {
+            dispose();
+            new LoginBiblioteca();
+        });
 
-        // Añadir el Filler al panel izquierdo para empujar el botón al final
-        panelIzquierdo.add(Box.createVerticalGlue()); // Esto empuja el botón "Salir" hacia abajo
-
-        // Añadir el botón Salir al panel izquierdo
+        panelIzquierdo.add(Box.createVerticalGlue());
         panelIzquierdo.add(botonSalir);
     }
 
     private void ejecutarFuncionAdministrador(String submenu) {
-        panelCentral.removeAll(); // Limpiar contenido previo
+        panelCentral.removeAll();
 
         JPanel nuevoPanel = null;
 
@@ -270,14 +263,8 @@ public class MenuAdministrador extends JFrame {
                 break;
 
             // Consultar Ejemplares
-            case "Buscar por Título":
-                nuevoPanel = new BuscarPorTitulo();
-                break;
-            case "Buscar por Autor":
-                nuevoPanel = new BuscarPorAutor();
-                break;
-            case "Filtrar por Estado":
-                nuevoPanel = new FiltrarPorEstado();
+            case "Buscar por Título, Autor o Estado":
+                nuevoPanel = new BuscarPorTituloAutorEstado();
                 break;
 
             // Gestión de Ejemplares
@@ -312,6 +299,6 @@ public class MenuAdministrador extends JFrame {
     }
 
     public static void main(String[] args) {
-        new MenuAdministrador(); // Prueba como Administrador
+        new MenuAdministrador();
     }
 }
