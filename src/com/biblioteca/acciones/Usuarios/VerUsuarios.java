@@ -11,6 +11,8 @@ import java.sql.*;
 public class VerUsuarios extends JPanel {
     private JTable usuariosTable;
     private DefaultTableModel tableModel;
+    private JTextField searchField;
+    private JComboBox<String> searchTypeComboBox;
 
     public VerUsuarios() {
         setLayout(new BorderLayout(10, 10));
@@ -24,6 +26,43 @@ public class VerUsuarios extends JPanel {
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         add(titleLabel, BorderLayout.NORTH);
 
+        // Panel de búsqueda
+        JPanel searchPanel = new JPanel(new BorderLayout(10, 10));
+        searchPanel.setBackground(Color.WHITE);
+        searchPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(70, 130, 180)),
+                "Buscar Usuario",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Segoe UI", Font.PLAIN, 14),
+                new Color(70, 130, 180)
+        ));
+
+        // ComboBox para tipo de búsqueda
+        searchTypeComboBox = new JComboBox<>(new String[]{"Nombre", "ID", "Correo"});
+        searchTypeComboBox.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+
+        // Campo de texto para la búsqueda
+        searchField = new JTextField();
+        searchField.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+
+        // Botón de búsqueda
+        JButton searchButton = new JButton("Buscar");
+        searchButton.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        searchButton.setBackground(new Color(51, 102, 153));
+        searchButton.setForeground(Color.WHITE);
+        searchButton.addActionListener(e -> buscarUsuarios());
+
+        // Añadir componentes al panel de búsqueda
+        JPanel inputsPanel = new JPanel(new GridLayout(1, 2, 10, 10));
+        inputsPanel.setBackground(Color.WHITE);
+        inputsPanel.add(searchTypeComboBox);
+        inputsPanel.add(searchField);
+        searchPanel.add(inputsPanel, BorderLayout.CENTER);
+        searchPanel.add(searchButton, BorderLayout.EAST);
+
+        add(searchPanel, BorderLayout.SOUTH);
+
         // Configuración de la tabla
         tableModel = new DefaultTableModel();
         usuariosTable = createStyledTable(tableModel);
@@ -32,13 +71,25 @@ public class VerUsuarios extends JPanel {
         add(scrollPane, BorderLayout.CENTER);
 
         // Cargar los usuarios
-        cargarUsuarios();
+        cargarUsuarios(null, null);
     }
 
-    private void cargarUsuarios() {
+    private void cargarUsuarios(String parametro, String valor) {
+        tableModel.setRowCount(0); // Limpiar los datos actuales de la tabla
+        tableModel.setColumnCount(0); // Limpiar las columnas (si es necesario)
+
         try (Connection conn = ConexionBaseDatos.getConexion()) {
             String query = "SELECT * FROM usuarios";
+            if (parametro != null && valor != null && !valor.isEmpty()) {
+                query += " WHERE " + parametro + " LIKE ?";
+            }
+
             PreparedStatement stmt = conn.prepareStatement(query);
+
+            if (parametro != null && valor != null && !valor.isEmpty()) {
+                stmt.setString(1, "%" + valor + "%");
+            }
+
             ResultSet rs = stmt.executeQuery();
 
             // Obtener metadatos de las columnas
@@ -73,6 +124,23 @@ public class VerUsuarios extends JPanel {
         }
     }
 
+    private void buscarUsuarios() {
+        String tipoBusqueda = (String) searchTypeComboBox.getSelectedItem();
+        String parametro = null;
+
+        // Determinar el parámetro de búsqueda basado en la selección
+        if ("Nombre".equals(tipoBusqueda)) {
+            parametro = "nombre";
+        } else if ("ID".equals(tipoBusqueda)) {
+            parametro = "id";
+        } else if ("Correo".equals(tipoBusqueda)) {
+            parametro = "correo";
+        }
+
+        String valorBusqueda = searchField.getText().trim();
+        cargarUsuarios(parametro, valorBusqueda);
+    }
+
     private void ajustarColumnas() {
         TableColumnModel columnModel = usuariosTable.getColumnModel();
         for (int i = 0; i < columnModel.getColumnCount(); i++) {
@@ -91,8 +159,6 @@ public class VerUsuarios extends JPanel {
         }
     }
 
-    // Métodos auxiliares para crear componentes estilizados
-
     private JTable createStyledTable(DefaultTableModel model) {
         JTable table = new JTable(model);
         table.setFont(new Font("Segoe UI", Font.PLAIN, 16));
@@ -100,14 +166,12 @@ public class VerUsuarios extends JPanel {
         table.setFillsViewportHeight(true);
         table.getTableHeader().setReorderingAllowed(false);
 
-        // Estilo para el encabezado de la tabla
         JTableHeader header = table.getTableHeader();
         header.setBackground(new Color(70, 130, 180));
         header.setForeground(Color.WHITE);
         header.setFont(new Font("Segoe UI", Font.BOLD, 16));
         header.setPreferredSize(new Dimension(header.getWidth(), 35));
 
-        // Centrar el texto en el encabezado de la tabla
         DefaultTableCellRenderer headerRenderer = (DefaultTableCellRenderer) header.getDefaultRenderer();
         headerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -121,7 +185,6 @@ public class VerUsuarios extends JPanel {
     }
 
     private String formatColumnName(String input) {
-        // Formatear el nombre de la columna para mostrarlo de manera más legible
         String output = input.replace("_", " ");
         return Character.toUpperCase(output.charAt(0)) + output.substring(1);
     }

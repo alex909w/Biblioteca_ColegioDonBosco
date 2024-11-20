@@ -65,6 +65,7 @@ public class EditarUsuario extends JPanel {
 
         JButton limpiarButton = crearBoton("Limpiar", new Color(247, 185, 0));
         limpiarButton.addActionListener(e -> limpiarFormulario());
+        limpiarButton.setForeground(Color.BLACK);
         buttonPanel.add(limpiarButton);
 
         add(buttonPanel, BorderLayout.SOUTH);

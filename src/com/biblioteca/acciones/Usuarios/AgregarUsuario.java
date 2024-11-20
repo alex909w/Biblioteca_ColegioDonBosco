@@ -68,6 +68,7 @@ public class AgregarUsuario extends JPanel {
         buttonPanel.add(agregarButton);
 
         JButton limpiarButton = crearBoton("Limpiar", new Color(247, 185, 0));
+        limpiarButton.setForeground(Color.BLACK);
         limpiarButton.addActionListener(e -> limpiarFormulario());
         buttonPanel.add(limpiarButton);
 
