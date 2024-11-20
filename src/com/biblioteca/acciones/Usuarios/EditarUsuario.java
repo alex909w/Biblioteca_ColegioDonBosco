@@ -10,10 +10,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class EditarUsuario extends JPanel {
-    private JTextField idUsuarioField, nombreField, emailField, telefonoField, direccionField, fechaNacimientoField, departamentoField;
+    private JComboBox<String> idUsuarioComboBox;
+    private JTextField nombreField, emailField, telefonoField, direccionField, fechaNacimientoField, departamentoField;
     private JPasswordField passwordField;
     private JComboBox<String> rolComboBox;
-    private JButton buscarButton, actualizarButton, limpiarButton;
+    private JButton actualizarButton, limpiarButton;
 
     public EditarUsuario() {
         setLayout(new BorderLayout());
@@ -24,25 +25,11 @@ public class EditarUsuario extends JPanel {
         idPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         idPanel.add(new JLabel("ID Usuario:"));
-        idUsuarioField = new JTextField(10);
-        idPanel.add(idUsuarioField);
-
-        buscarButton = new JButton("Buscar");
-        buscarButton.setFont(new Font("Arial", Font.BOLD, 14));
-        buscarButton.setBackground(new Color(34, 139, 34)); // Verde
-        buscarButton.setForeground(Color.WHITE);
-        buscarButton.setFocusPainted(false);
-        buscarButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                buscarButton.setBackground(new Color(0, 100, 0)); // Verde oscuro
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                buscarButton.setBackground(new Color(34, 139, 34)); // Color original
-            }
-        });
-        buscarButton.addActionListener(e -> buscarUsuario());
-        idPanel.add(buscarButton);
+        idUsuarioComboBox = new JComboBox<>();
+        idUsuarioComboBox.setEditable(true); // Permite la búsqueda
+        cargarUsuariosEnComboBox(); // Cargar los IDs de usuarios
+        idUsuarioComboBox.addActionListener(e -> cargarUsuarioSeleccionado());
+        idPanel.add(idUsuarioComboBox);
 
         add(idPanel, BorderLayout.NORTH);
 
@@ -109,15 +96,6 @@ public class EditarUsuario extends JPanel {
         actualizarButton.setForeground(Color.WHITE);
         actualizarButton.setFocusPainted(false);
         actualizarButton.setEnabled(false);
-        actualizarButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                actualizarButton.setBackground(new Color(255, 120, 0)); // Naranja oscuro
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                actualizarButton.setBackground(new Color(255, 140, 0)); // Color original
-            }
-        });
         actualizarButton.addActionListener(e -> actualizarUsuario());
         buttonPanel.add(actualizarButton);
 
@@ -127,30 +105,30 @@ public class EditarUsuario extends JPanel {
         limpiarButton.setBackground(new Color(220, 53, 69)); // Rojo
         limpiarButton.setForeground(Color.WHITE);
         limpiarButton.setFocusPainted(false);
-        limpiarButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                limpiarButton.setBackground(new Color(176, 0, 32)); // Rojo oscuro
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                limpiarButton.setBackground(new Color(220, 53, 69)); // Color original
-            }
-        });
         limpiarButton.addActionListener(e -> limpiarFormulario());
         buttonPanel.add(limpiarButton);
 
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    private void buscarUsuario() {
-        String idUsuario = idUsuarioField.getText();
-        if (idUsuario.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor, ingrese el ID del usuario.");
-            return;
+    private void cargarUsuariosEnComboBox() {
+        try (Connection conn = ConexionBaseDatos.getConexion();
+             PreparedStatement stmt = conn.prepareStatement("SELECT id FROM usuarios")) {
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                idUsuarioComboBox.addItem(rs.getString("id"));
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al cargar usuarios: " + ex.getMessage());
         }
+    }
+
+    private void cargarUsuarioSeleccionado() {
+        String idUsuario = (String) idUsuarioComboBox.getSelectedItem();
+        if (idUsuario == null || idUsuario.isEmpty()) return;
 
         try (Connection conn = ConexionBaseDatos.getConexion()) {
-            String sql = "SELECT * FROM usuarios WHERE id_usuario = ?";
+            String sql = "SELECT * FROM usuarios WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, idUsuario);
 
@@ -176,14 +154,15 @@ public class EditarUsuario extends JPanel {
                 actualizarButton.setEnabled(true);
             } else {
                 JOptionPane.showMessageDialog(this, "Usuario no encontrado.");
+                limpiarFormulario();
             }
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error al buscar usuario: " + ex.getMessage());
+            JOptionPane.showMessageDialog(this, "Error al cargar usuario: " + ex.getMessage());
         }
     }
 
     private void actualizarUsuario() {
-        String idUsuario = idUsuarioField.getText();
+        String idUsuario = (String) idUsuarioComboBox.getSelectedItem();
         String nombre = nombreField.getText();
         String email = emailField.getText();
         String rol = (String) rolComboBox.getSelectedItem();
@@ -199,7 +178,7 @@ public class EditarUsuario extends JPanel {
         }
 
         try (Connection conn = ConexionBaseDatos.getConexion()) {
-            String sql = "UPDATE usuarios SET nombre = ?, email = ?, rol = ?, contraseña = ?, telefono = ?, direccion = ?, fecha_nacimiento = ?, departamento = ? WHERE id_usuario = ?";
+            String sql = "UPDATE usuarios SET nombre = ?, email = ?, rol = ?, contraseña = ?, telefono = ?, direccion = ?, fecha_nacimiento = ?, departamento = ? WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, nombre);
             stmt.setString(2, email);
@@ -224,7 +203,7 @@ public class EditarUsuario extends JPanel {
     }
 
     private void limpiarFormulario() {
-        idUsuarioField.setText("");
+        idUsuarioComboBox.setSelectedItem(null);
         nombreField.setText("");
         emailField.setText("");
         passwordField.setText("");

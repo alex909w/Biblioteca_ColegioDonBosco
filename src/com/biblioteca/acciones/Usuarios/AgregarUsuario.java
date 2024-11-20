@@ -6,10 +6,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class AgregarUsuario extends JPanel {
-    private JTextField nombreField, emailField, telefonoField, direccionField, fechaNacimientoField, departamentoField;
+    private JTextField idField, nombreField, emailField, telefonoField, direccionField, fechaNacimientoField, departamentoField;
     private JPasswordField passwordField;
     private JComboBox<String> rolComboBox;
 
@@ -18,8 +19,13 @@ public class AgregarUsuario extends JPanel {
         setBorder(BorderFactory.createTitledBorder("Agregar Usuario"));
 
         // Panel central con los campos del formulario
-        JPanel formularioPanel = new JPanel(new GridLayout(8, 2, 10, 10));
+        JPanel formularioPanel = new JPanel(new GridLayout(9, 2, 10, 10));
         formularioPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        formularioPanel.add(new JLabel("ID del Usuario:"));
+        idField = new JTextField();
+        idField.setEnabled(false); // Campo solo lectura
+        formularioPanel.add(idField);
 
         formularioPanel.add(new JLabel("Nombre:"));
         nombreField = new JTextField();
@@ -31,6 +37,7 @@ public class AgregarUsuario extends JPanel {
 
         formularioPanel.add(new JLabel("Rol:"));
         rolComboBox = new JComboBox<>(new String[]{"Administrador", "Profesor", "Alumno"});
+        rolComboBox.addActionListener(e -> actualizarID()); // Actualizar el ID automáticamente
         formularioPanel.add(rolComboBox);
 
         formularioPanel.add(new JLabel("Contraseña:"));
@@ -105,9 +112,46 @@ public class AgregarUsuario extends JPanel {
         buttonPanel.add(limpiarButton);
 
         add(buttonPanel, BorderLayout.SOUTH);
+
+        // Generar ID inicial basado en el rol seleccionado
+        actualizarID();
+    }
+
+    private void actualizarID() {
+        String rol = (String) rolComboBox.getSelectedItem();
+        String prefijo;
+
+        switch (rol) {
+            case "Administrador":
+                prefijo = "AD";
+                break;
+            case "Profesor":
+                prefijo = "PR";
+                break;
+            case "Alumno":
+                prefijo = "AL";
+                break;
+            default:
+                prefijo = "XX";
+        }
+
+        // Consultar la base de datos para obtener el siguiente ID disponible
+        try (Connection conn = ConexionBaseDatos.getConexion()) {
+            String sql = "SELECT COUNT(*) + 1 AS siguiente_id FROM usuarios WHERE rol = ?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, rol);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                int siguienteID = rs.getInt("siguiente_id");
+                idField.setText(String.format("%s%05d", prefijo, siguienteID));
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al generar el ID: " + ex.getMessage());
+        }
     }
 
     private void agregarUsuario() {
+        String id = idField.getText();
         String nombre = nombreField.getText();
         String email = emailField.getText();
         String rol = (String) rolComboBox.getSelectedItem();
@@ -117,22 +161,23 @@ public class AgregarUsuario extends JPanel {
         String fechaNacimiento = fechaNacimientoField.getText();
         String departamento = departamentoField.getText();
 
-        if (nombre.isEmpty() || email.isEmpty() || contraseña.isEmpty() || fechaNacimiento.isEmpty() || departamento.isEmpty()) {
+        if (id.isEmpty() || nombre.isEmpty() || email.isEmpty() || contraseña.isEmpty() || fechaNacimiento.isEmpty() || departamento.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos obligatorios.");
             return;
         }
 
         try (Connection conn = ConexionBaseDatos.getConexion()) {
-            String sql = "INSERT INTO usuarios (nombre, email, rol, contraseña, telefono, direccion, fecha_nacimiento, departamento) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO usuarios (id, nombre, email, rol, contraseña, telefono, direccion, fecha_nacimiento, departamento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, nombre);
-            stmt.setString(2, email);
-            stmt.setString(3, rol);
-            stmt.setString(4, contraseña);
-            stmt.setString(5, telefono);
-            stmt.setString(6, direccion);
-            stmt.setString(7, fechaNacimiento);
-            stmt.setString(8, departamento);
+            stmt.setString(1, id);
+            stmt.setString(2, nombre);
+            stmt.setString(3, email);
+            stmt.setString(4, rol);
+            stmt.setString(5, contraseña);
+            stmt.setString(6, telefono);
+            stmt.setString(7, direccion);
+            stmt.setString(8, fechaNacimiento);
+            stmt.setString(9, departamento);
 
             stmt.executeUpdate();
             JOptionPane.showMessageDialog(this, "Usuario agregado exitosamente.");
@@ -151,5 +196,6 @@ public class AgregarUsuario extends JPanel {
         fechaNacimientoField.setText("");
         departamentoField.setText("");
         rolComboBox.setSelectedIndex(0);
+        actualizarID(); // Actualizar ID basado en el rol inicial
     }
 }
