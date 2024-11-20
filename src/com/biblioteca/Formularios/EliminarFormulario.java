@@ -91,6 +91,9 @@ public class EliminarFormulario extends JPanel {
     private void cargarTablasExistentes() {
     tablasComboBox.removeAllItems(); // Limpiar el ComboBox antes de cargar
     String query = "SELECT nombre FROM tipos_documentos"; // Consulta para obtener los nombres de las tablas
+    
+     // Añadir el elemento predeterminado
+        tablasComboBox.addItem("Opciones");
 
     try (Connection conn = ConexionBaseDatos.getConexion();
          Statement stmt = conn.createStatement();

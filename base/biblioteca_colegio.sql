@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1:3306
--- Tiempo de generación: 20-11-2024 a las 02:15:14
+-- Tiempo de generación: 20-11-2024 a las 05:08:53
 -- Versión del servidor: 8.3.0
 -- Versión de PHP: 8.2.18
 
@@ -22,6 +22,49 @@ SET time_zone = "+00:00";
 --
 CREATE DATABASE IF NOT EXISTS `biblioteca_colegio` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `biblioteca_colegio`;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `asdasd`
+--
+
+DROP TABLE IF EXISTS `asdasd`;
+CREATE TABLE IF NOT EXISTS `asdasd` (
+  `id_asdasd` varchar(15) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `a` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `b` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ubicacion_fisica` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cantidad_disponible` int DEFAULT '0',
+  `estado` enum('Bueno','Dañado','En Reparación') COLLATE utf8mb4_unicode_ci DEFAULT 'Bueno',
+  `palabras_clave` text COLLATE utf8mb4_unicode_ci,
+  `fecha_registro` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_asdasd`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `cds`
+--
+
+DROP TABLE IF EXISTS `cds`;
+CREATE TABLE IF NOT EXISTS `cds` (
+  `id_cds` varchar(15) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `a` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `b` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `c` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `d` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ubicacion_fisica` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cantidad_total` int DEFAULT '0',
+  `cantidad_disponible` int DEFAULT '0',
+  `estado` enum('Bueno','Dañado','En Reparación') COLLATE utf8mb4_unicode_ci DEFAULT 'Bueno',
+  `palabras_clave` text COLLATE utf8mb4_unicode_ci,
+  `fecha_registro` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `Si` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Prueba` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id_cds`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -50,39 +93,22 @@ INSERT INTO `configuraciones` (`id`, `clave`, `valor`, `fecha_modificacion`) VAL
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `documentos`
+-- Estructura de tabla para la tabla `libros`
 --
 
-DROP TABLE IF EXISTS `documentos`;
-CREATE TABLE IF NOT EXISTS `documentos` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `titulo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `autor` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `categoria` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `id_tipo` int NOT NULL,
-  `ubicacion_fisica` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `cantidad_total` int NOT NULL DEFAULT '0',
-  `cantidad_disponible` int NOT NULL DEFAULT '0',
-  `fecha_publicacion` date DEFAULT NULL,
-  `fecha_registro` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `id_tipo` (`id_tipo`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `formulario_generado`
---
-
-DROP TABLE IF EXISTS `formulario_generado`;
-CREATE TABLE IF NOT EXISTS `formulario_generado` (
+DROP TABLE IF EXISTS `libros`;
+CREATE TABLE IF NOT EXISTS `libros` (
+  `id_libros` varchar(15) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `DEscripcion` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Amigo` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `YA_CAsi` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `ubicacion_fisica` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `cantidad_total` int DEFAULT '0',
   `cantidad_disponible` int DEFAULT '0',
   `estado` enum('Bueno','Dañado','En Reparación') COLLATE utf8mb4_unicode_ci DEFAULT 'Bueno',
   `palabras_clave` text COLLATE utf8mb4_unicode_ci,
-  `fecha_registro` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+  `fecha_registro` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_libros`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -133,19 +159,18 @@ CREATE TABLE IF NOT EXISTS `tipos_documentos` (
   `id` int NOT NULL AUTO_INCREMENT,
   `nombre` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `fecha_creacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `nombre` (`nombre`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `tipos_documentos`
 --
 
 INSERT INTO `tipos_documentos` (`id`, `nombre`, `fecha_creacion`) VALUES
-(1, 'Libros', '2024-11-20 01:38:39'),
-(2, 'Revistas', '2024-11-20 01:38:39'),
-(3, 'CD', '2024-11-20 01:38:39'),
-(4, 'Tesis', '2024-11-20 01:38:39'),
-(5, 'Obras', '2024-11-20 01:38:39');
+(9, 'LIBROS', '2024-11-20 04:07:09'),
+(11, 'CDs', '2024-11-20 04:28:04'),
+(12, 'asdasd', '2024-11-20 05:06:13');
 
 -- --------------------------------------------------------
 
