@@ -1,4 +1,4 @@
-package biblioteca.interfaces.Inventario;
+package com.biblioteca.Inventario;
 
 import com.biblioteca.base_datos.ConexionBaseDatos;
 

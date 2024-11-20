@@ -1,8 +1,8 @@
 package com.biblioteca.interfaces;
 
-import biblioteca.interfaces.Inventario.EliminarArticulo;
-import biblioteca.interfaces.Inventario.EditarArticulo;
-import biblioteca.interfaces.Inventario.RegistrarArticulo;
+import com.biblioteca.Inventario.EliminarArticulo;
+import com.biblioteca.Inventario.EditarArticulo;
+import com.biblioteca.Inventario.RegistrarArticulo;
 import com.biblioteca.Formularios.CrearFormulario;
 import com.biblioteca.Formularios.EditarFormulario;
 import com.biblioteca.Formularios.EliminarFormulario;

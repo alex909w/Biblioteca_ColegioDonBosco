@@ -96,17 +96,25 @@ public class EditarFormulario extends JPanel {
     private List<JTextField> nuevasColumnas = new ArrayList<>(); // Lista para nuevas columnas
 
     private void cargarTablasExistentes() {
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SHOW TABLES")) {
+    tablasComboBox.removeAllItems(); // Limpiar el ComboBox antes de cargar
+    String query = "SELECT nombre FROM tipos_documentos"; // Consulta para obtener los nombres de las tablas
 
-            while (rs.next()) {
-                tablasComboBox.addItem(rs.getString(1));
-            }
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error al cargar tablas: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    try (Connection conn = ConexionBaseDatos.getConexion();
+         Statement stmt = conn.createStatement();
+         ResultSet rs = stmt.executeQuery(query)) {
+
+        while (rs.next()) {
+            tablasComboBox.addItem(rs.getString("nombre"));
         }
+
+        if (tablasComboBox.getItemCount() == 0) {
+            JOptionPane.showMessageDialog(this, "No se encontraron tablas registradas en 'tipos_documentos'.", "Información", JOptionPane.INFORMATION_MESSAGE);
+        }
+    } catch (SQLException ex) {
+        JOptionPane.showMessageDialog(this, "Error al cargar tablas desde 'tipos_documentos': " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
+}
+
 
     private void cargarColumnas() {
     columnasPanel.removeAll();

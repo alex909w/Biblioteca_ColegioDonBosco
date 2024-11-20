@@ -12,7 +12,7 @@ import javax.swing.border.TitledBorder;
 
 public class EliminarUsuario extends JPanel {
     private JComboBox<String> idUsuarioComboBox;
-    private JTextField nombreField, emailField, telefonoField, direccionField, fechaNacimientoField, departamentoField;
+    private JTextField nombreField, emailField, telefonoField, direccionField, fechaNacimientoField, departamentoField, fechaRegistroField;
     private JButton eliminarButton;
 
     public EliminarUsuario() {
@@ -39,38 +39,36 @@ public class EliminarUsuario extends JPanel {
         add(idPanel, BorderLayout.NORTH);
 
         // Panel central para mostrar datos
-        JPanel datosPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        JPanel datosPanel = new JPanel(new GridLayout(4, 2, 10, 10));
         datosPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         datosPanel.add(new JLabel("Nombre:"));
-        nombreField = new JTextField();
-        nombreField.setEnabled(false); // Solo lectura
+        nombreField = createReadOnlyTextField();
         datosPanel.add(nombreField);
 
         datosPanel.add(new JLabel("Email:"));
-        emailField = new JTextField();
-        emailField.setEnabled(false); // Solo lectura
+        emailField = createReadOnlyTextField();
         datosPanel.add(emailField);
 
         datosPanel.add(new JLabel("Teléfono:"));
-        telefonoField = new JTextField();
-        telefonoField.setEnabled(false); // Solo lectura
+        telefonoField = createReadOnlyTextField();
         datosPanel.add(telefonoField);
 
         datosPanel.add(new JLabel("Dirección:"));
-        direccionField = new JTextField();
-        direccionField.setEnabled(false); // Solo lectura
+        direccionField = createReadOnlyTextField();
         datosPanel.add(direccionField);
 
         datosPanel.add(new JLabel("Fecha Nacimiento:"));
-        fechaNacimientoField = new JTextField();
-        fechaNacimientoField.setEnabled(false); // Solo lectura
+        fechaNacimientoField = createReadOnlyTextField();
         datosPanel.add(fechaNacimientoField);
 
         datosPanel.add(new JLabel("Departamento:"));
-        departamentoField = new JTextField();
-        departamentoField.setEnabled(false); // Solo lectura
+        departamentoField = createReadOnlyTextField();
         datosPanel.add(departamentoField);
+
+        datosPanel.add(new JLabel("Fecha Registro:"));
+        fechaRegistroField = createReadOnlyTextField();
+        datosPanel.add(fechaRegistroField);
 
         add(datosPanel, BorderLayout.CENTER);
 
@@ -135,6 +133,7 @@ public class EliminarUsuario extends JPanel {
                 direccionField.setText(rs.getString("direccion"));
                 fechaNacimientoField.setText(rs.getString("fecha_nacimiento"));
                 departamentoField.setText(rs.getString("departamento"));
+                fechaRegistroField.setText(rs.getString("fecha_registro"));
             } else {
                 JOptionPane.showMessageDialog(this, "Usuario no encontrado.");
                 limpiarCampos();
@@ -184,5 +183,14 @@ public class EliminarUsuario extends JPanel {
         direccionField.setText("");
         fechaNacimientoField.setText("");
         departamentoField.setText("");
+        fechaRegistroField.setText("");
+    }
+
+    private JTextField createReadOnlyTextField() {
+        JTextField textField = new JTextField();
+        textField.setFont(new Font("Arial", Font.PLAIN, 14));
+        textField.setForeground(Color.BLACK);
+        textField.setEditable(false);
+        return textField;
     }
 }

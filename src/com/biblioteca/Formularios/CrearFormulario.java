@@ -5,7 +5,6 @@ import com.biblioteca.base_datos.ConexionBaseDatos;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +15,7 @@ public class CrearFormulario extends JPanel {
     private JTextField numeroColumnasField;
     private JPanel columnasPanel;
     private JButton generarColumnasButton, crearTablaButton;
-    private boolean usarExistente = false; // Flag para indicar si se usa tabla existente
+    private boolean usarExistente = false;
 
     // Definición de colores para los botones
     private final Color botonCrearTabla = new Color(255, 69, 0); // Orange Red
@@ -24,59 +23,57 @@ public class CrearFormulario extends JPanel {
     private final Color botonGenerarCampos = new Color(34, 139, 34); // Forest Green
     private final Color botonGenerarCamposHover = new Color(0, 100, 0); // Dark Green
 
+    private List<JTextField> camposDinamicos = new ArrayList<>();
+
     public CrearFormulario() {
         setLayout(new BorderLayout());
-        setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 2),
-                "Crear Nuevo Formulario", TitledBorder.CENTER, TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 18), new Color(70, 130, 180)));
+        setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(70, 130, 180), 2),
+                "Crear Nuevo Formulario",
+                TitledBorder.CENTER,
+                TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 18),
+                new Color(70, 130, 180)
+        ));
 
-        // Panel superior con configuraciones (usando GridBagLayout)
+        // Panel superior con configuraciones
         JPanel configuracionPanel = new JPanel(new GridBagLayout());
         configuracionPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Fila 1: Nombre del Formulario
+        // Nombre del formulario
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         configuracionPanel.add(createStyledLabel("Nombre del Formulario:"), gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 0;
-        gbc.gridwidth = 3;
         gbc.weightx = 0.8;
         configuracionPanel.add(nombreTablaField = createStyledTextField(), gbc);
 
-        // Fila 2: Número de Columnas
+        // Número de columnas
         gbc.gridx = 0;
         gbc.gridy = 1;
-        gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         configuracionPanel.add(createStyledLabel("Número de Columnas:"), gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 1;
-        gbc.gridwidth = 3;
         gbc.weightx = 0.8;
         configuracionPanel.add(numeroColumnasField = createStyledTextField(), gbc);
 
-        // Fila 3: Botón Generar Campos
+        // Botón generar columnas
         gbc.gridx = 0;
         gbc.gridy = 2;
-        gbc.gridwidth = 4; // Ocupa todas las columnas
-        gbc.weightx = 1.0; // Centrado
+        gbc.gridwidth = 2;
+        gbc.weightx = 1.0;
         gbc.anchor = GridBagConstraints.CENTER;
         configuracionPanel.add(generarColumnasButton = createStyledButton("Generar Campos", botonGenerarCampos, botonGenerarCamposHover), gbc);
 
-        generarColumnasButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                generarCampos();
-            }
-        });
+        generarColumnasButton.addActionListener(e -> generarCampos());
 
         add(configuracionPanel, BorderLayout.NORTH);
 
@@ -86,26 +83,30 @@ public class CrearFormulario extends JPanel {
         columnasPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
         JScrollPane scrollPanel = new JScrollPane(columnasPanel);
         scrollPanel.setPreferredSize(new Dimension(500, 300));
-        scrollPanel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(Color.GRAY),
-                "Columnas Personalizadas", TitledBorder.LEFT, TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 14), Color.DARK_GRAY));
+        scrollPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.GRAY),
+                "Columnas Personalizadas",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 14),
+                Color.DARK_GRAY
+        ));
         add(scrollPanel, BorderLayout.CENTER);
 
-        // Botón inferior para crear tabla
+        // Botón crear tabla
         crearTablaButton = createStyledButton("Crear Tabla", botonCrearTabla, botonCrearTablaHover);
         crearTablaButton.addActionListener(e -> crearTabla());
+        crearTablaButton.setEnabled(false);
+
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
         buttonPanel.add(crearTablaButton);
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    private List<JTextField> camposDinamicos = new ArrayList<>(); // Lista para almacenar los campos dinámicos
-
     private void generarCampos() {
-        // Limpiar cualquier contenido previo
         columnasPanel.removeAll();
         camposDinamicos.clear();
-        usarExistente = false; // Resetear el flag
+        crearTablaButton.setEnabled(false);
 
         String nombreTabla = nombreTablaField.getText().trim();
         if (nombreTabla.isEmpty()) {
@@ -113,33 +114,20 @@ public class CrearFormulario extends JPanel {
             return;
         }
 
-        if (tableExists(nombreTabla)) {
-            int opcion = JOptionPane.showOptionDialog(this,
-                    "La tabla '" + nombreTabla + "' ya existe. ¿Desea usar la existente o eliminarla y crear una nueva?",
-                    "Tabla existente",
-                    JOptionPane.YES_NO_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    new String[]{"Usar existente", "Eliminar y crear nueva"},
-                    "Usar existente");
-
-            if (opcion == JOptionPane.YES_OPTION) {
-                usarExistente = true;
-                JOptionPane.showMessageDialog(this, "Usando la tabla existente.");
-                // Opcional: Deshabilitar la generación de nuevas columnas
-                crearTablaButton.setEnabled(false);
-                return;
-            } else if (opcion == JOptionPane.NO_OPTION) {
-                if (dropTable(nombreTabla)) {
-                    JOptionPane.showMessageDialog(this, "Tabla eliminada exitosamente. Puede crear una nueva.");
-                } else {
-                    JOptionPane.showMessageDialog(this, "No se pudo eliminar la tabla. Operación cancelada.");
+        try (Connection conn = ConexionBaseDatos.getConexion()) {
+            // Verificar si el formulario ya existe en tipos_documentos
+            String verificarRegistroSQL = "SELECT COUNT(*) AS total FROM tipos_documentos WHERE nombre = ?";
+            try (PreparedStatement psVerificar = conn.prepareStatement(verificarRegistroSQL)) {
+                psVerificar.setString(1, nombreTabla);
+                ResultSet rs = psVerificar.executeQuery();
+                if (rs.next() && rs.getInt("total") > 0) {
+                    JOptionPane.showMessageDialog(this, "El nombre del formulario ya existe en 'tipos_documentos'.");
                     return;
                 }
-            } else {
-                // Usuario cerró el diálogo o canceló
-                return;
             }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al verificar el nombre en 'tipos_documentos': " + e.getMessage());
+            return;
         }
 
         try {
@@ -149,84 +137,79 @@ public class CrearFormulario extends JPanel {
                 return;
             }
 
-            // Generar dinámicamente los campos para el número de columnas especificado
             for (int i = 0; i < numeroColumnas; i++) {
-                // Crear un panel para cada columna con fondo neutro
                 JPanel columnaPanel = new JPanel(new BorderLayout(10, 10));
                 columnaPanel.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(botonCrearTabla, 1),
+                        BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
                         BorderFactory.createEmptyBorder(10, 10, 10, 10)
                 ));
-                columnaPanel.setBackground(Color.WHITE); // Fondo neutro
+                columnaPanel.setBackground(Color.WHITE);
 
-                // Etiqueta para el nombre de la columna
                 JLabel columnaLabel = createStyledLabel("Nombre de la Columna " + (i + 1) + ":");
                 columnaPanel.add(columnaLabel, BorderLayout.WEST);
 
-                // Campo de texto para ingresar el nombre de la columna
                 JTextField nombreColumnaField = createStyledTextField();
                 columnaPanel.add(nombreColumnaField, BorderLayout.CENTER);
 
-                // Añadir el campo a la lista de campos dinámicos
                 camposDinamicos.add(nombreColumnaField);
-
-                // Añadir el panel al panel principal
                 columnasPanel.add(columnaPanel);
-                columnasPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Espacio entre filas
+                columnasPanel.add(Box.createRigidArea(new Dimension(0, 10)));
             }
 
+            crearTablaButton.setEnabled(true);
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this, "Por favor, ingrese un número válido para las columnas.");
         }
 
-        // Revalidar y repintar para que los cambios sean visibles
-        columnasPanel.revalidate(); // Informar al LayoutManager
-        columnasPanel.repaint();    // Redibujar visualmente
+        columnasPanel.revalidate();
+        columnasPanel.repaint();
     }
 
-    private boolean tableExists(String tableName) {
-        try (Connection conn = ConexionBaseDatos.getConexion()) {
-            DatabaseMetaData meta = conn.getMetaData();
-            try (ResultSet rs = meta.getTables(null, null, tableName, new String[]{"TABLE"})) {
-                return rs.next();
+   private void crearTabla() {
+    if (usarExistente) {
+        JOptionPane.showMessageDialog(this, "Se está utilizando la tabla existente. No es necesario crear una nueva.");
+        return;
+    }
+
+    String nombreTabla = nombreTablaField.getText().trim().toUpperCase(); // Convertir a mayúsculas
+    if (nombreTabla.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "El nombre del formulario no puede estar vacío.");
+        return;
+    }
+
+    // Validar formato del nombre de la tabla (solo letras, números y guiones bajos permitidos)
+    if (!nombreTabla.matches("[A-Z0-9_]+")) {
+        JOptionPane.showMessageDialog(this, "El nombre del formulario debe contener solo letras, números o guiones bajos.", 
+                                      "Error en el nombre", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    try (Connection conn = ConexionBaseDatos.getConexion()) {
+        conn.setAutoCommit(false);
+
+        // Verificar si el nombre ya está registrado en `tipos_documentos`
+        String verificarRegistroSQL = "SELECT COUNT(*) FROM tipos_documentos WHERE nombre = ?";
+        try (PreparedStatement psVerificar = conn.prepareStatement(verificarRegistroSQL)) {
+            psVerificar.setString(1, nombreTabla);
+            ResultSet rs = psVerificar.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                JOptionPane.showMessageDialog(this, "El formulario ya está registrado en 'tipos_documentos'.");
+                return;
             }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al verificar la existencia de la tabla: " + e.getMessage());
-            return false;
-        }
-    }
-
-    private boolean dropTable(String tableName) {
-        String sql = "DROP TABLE " + tableName;
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             Statement stmt = conn.createStatement()) {
-            stmt.executeUpdate(sql);
-            return true;
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al eliminar la tabla: " + e.getMessage());
-            return false;
-        }
-    }
-
-    private void crearTabla() {
-        if (usarExistente) {
-            JOptionPane.showMessageDialog(this, "Se está utilizando la tabla existente. No es necesario crear una nueva.");
-            return;
         }
 
-        String nombreTabla = nombreTablaField.getText().trim();
-        if (nombreTabla.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "El nombre del formulario no puede estar vacío.");
-            return;
-        }
-
+        // Crear la definición de la tabla
         StringBuilder sql = new StringBuilder("CREATE TABLE ").append(nombreTabla).append(" (");
 
+        // Agregar la columna ID con formato `id_nombreDeLaTabla`
+        String idColumna = "id_" + nombreTabla.toLowerCase();
+        sql.append(idColumna).append(" VARCHAR(15) PRIMARY KEY, "); // Máximo 15 caracteres: 3 letras + 5 números, ajustado si es necesario
+
         // Procesar los nombres de las columnas dinámicas
-        for (int i = 0; i < camposDinamicos.size(); i++) {
-            String nombreColumna = camposDinamicos.get(i).getText().trim();
+        for (JTextField campo : camposDinamicos) {
+            String nombreColumna = campo.getText().trim();
             if (nombreColumna.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "El nombre de la columna " + (i + 1) + " está vacío.");
+                JOptionPane.showMessageDialog(this, "Los nombres de las columnas no pueden estar vacíos.");
                 return;
             }
             sql.append(nombreColumna).append(" VARCHAR(255), ");
@@ -239,18 +222,34 @@ public class CrearFormulario extends JPanel {
         sql.append("estado ENUM('Bueno', 'Dañado', 'En Reparación') DEFAULT 'Bueno', ");
         sql.append("palabras_clave TEXT, ");
         sql.append("fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
-
         sql.append(");");
 
-        // Ejecutar SQL para crear la tabla
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             Statement stmt = conn.createStatement()) {
+        try (Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(sql.toString());
-            JOptionPane.showMessageDialog(this, "Tabla creada exitosamente.");
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al crear la tabla: " + e.getMessage());
         }
+
+        // Registrar el nuevo tipo de documento en la tabla `tipos_documentos`
+        String registrarTipoSQL = "INSERT INTO tipos_documentos (nombre, fecha_creacion) VALUES (?, NOW())";
+        try (PreparedStatement psRegistrar = conn.prepareStatement(registrarTipoSQL)) {
+            psRegistrar.setString(1, nombreTabla);
+            psRegistrar.executeUpdate();
+        }
+
+        conn.commit();
+        JOptionPane.showMessageDialog(this, "Tabla registrada de forma exitosa.");
+
+        // Limpiar campos
+        nombreTablaField.setText("");
+        numeroColumnasField.setText("");
+        columnasPanel.removeAll();
+        camposDinamicos.clear();
+        columnasPanel.revalidate();
+        columnasPanel.repaint();
+        crearTablaButton.setEnabled(false);
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al crear la tabla: " + e.getMessage());
     }
+}
 
     private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
         JButton button = new JButton(text);
@@ -280,7 +279,7 @@ public class CrearFormulario extends JPanel {
     private JLabel createStyledLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Arial", Font.BOLD, 14));
-        label.setForeground(new Color(25, 25, 112)); // Navy Blue for consistency
+        label.setForeground(new Color(25, 25, 112));
         return label;
     }
 
@@ -291,7 +290,7 @@ public class CrearFormulario extends JPanel {
                 BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
-        textField.setBackground(Color.WHITE); // Fondo blanco para mejor contraste
+        textField.setBackground(Color.WHITE);
         return textField;
     }
 }

@@ -1,4 +1,4 @@
-package com.biblioteca.Formularios.DAO;
+package com.biblioteca.DAO;
 
 import com.biblioteca.base_datos.ConexionBaseDatos;
 import org.mindrot.jbcrypt.BCrypt;
