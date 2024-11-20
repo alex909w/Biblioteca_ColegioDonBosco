@@ -21,6 +21,7 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
+import org.jdatepicker.impl.JDatePickerImpl;
 
 public class MenuAdministrador extends JFrame {
     private JPanel panelCentral;
@@ -188,6 +189,27 @@ public class MenuAdministrador extends JFrame {
         panelIzquierdo.add(Box.createVerticalStrut(10));
     }
 
+    private void agregarFormatoTelefonoSimple(JTextField campoTelefono) {
+    campoTelefono.addKeyListener(new java.awt.event.KeyAdapter() {
+        @Override
+        public void keyReleased(java.awt.event.KeyEvent evt) {
+            String texto = campoTelefono.getText();
+            texto = texto.replaceAll("[^\\d]", ""); // Elimina caracteres no numéricos
+
+            if (texto.length() > 4) {
+                texto = texto.substring(0, 4) + "-" + texto.substring(4); // Añade el guion después del 4º dígito
+            }
+
+            if (texto.length() > 9) {
+                texto = texto.substring(0, 9); // Limita a 8 dígitos más el guion
+            }
+
+            campoTelefono.setText(texto);
+        }
+    });
+}
+
+    
     private void ocultarTodosLosSubmenus() {
         for (JPanel submenu : submenusVisibles.values()) {
             submenu.setVisible(false);
@@ -314,6 +336,15 @@ public class MenuAdministrador extends JFrame {
         panelCentral.revalidate();
         panelCentral.repaint();
     }
+    
+    private java.sql.Date obtenerFechaNacimiento(JDatePickerImpl datePicker) {
+    Object selectedDate = datePicker.getModel().getValue();
+    if (selectedDate != null) {
+        return new java.sql.Date(((java.util.Date) selectedDate).getTime());
+    }
+    return null; // Si no se seleccionó ninguna fecha
+}
+
 
     private String obtenerCorreoUsuarioAutenticado() {
         return "admin@colegio.com";

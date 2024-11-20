@@ -48,7 +48,7 @@ public class VerUsuarios extends JPanel {
             // Añadir columnas al modelo de la tabla, excepto la columna de contraseña
             for (int i = 1; i <= columnCount; i++) {
                 String columnName = metaData.getColumnName(i);
-                if (!columnName.equalsIgnoreCase("clave")) { // Filtrar columna 'clave'
+                if (!columnName.equalsIgnoreCase("contraseña")) { // Filtrar columna 'clave'
                     tableModel.addColumn(formatColumnName(columnName));
                 }
             }
@@ -59,7 +59,7 @@ public class VerUsuarios extends JPanel {
                 int colIndex = 0;
                 for (int i = 1; i <= columnCount; i++) {
                     String columnName = metaData.getColumnName(i);
-                    if (!columnName.equalsIgnoreCase("clave")) { // Ignorar valores de la columna 'clave'
+                    if (!columnName.equalsIgnoreCase("contraseña")) { // Ignorar valores de la columna 'clave'
                         rowData[colIndex++] = rs.getObject(i);
                     }
                 }
