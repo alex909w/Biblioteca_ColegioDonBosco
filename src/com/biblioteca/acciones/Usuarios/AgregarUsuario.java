@@ -18,102 +18,118 @@ public class AgregarUsuario extends JPanel {
     private JComboBox<String> rolComboBox;
 
     public AgregarUsuario() {
-        setLayout(new BorderLayout());
-        setBorder(BorderFactory.createTitledBorder("Agregar Usuario"));
+        setLayout(new BorderLayout(20, 20));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBackground(new Color(248, 249, 250));
+        
+        // Título
+        JLabel titulo = new JLabel("Agregar Usuario", SwingConstants.CENTER);
+        titulo.setFont(new Font("Segoe UI", Font.BOLD, 20));
+        titulo.setForeground(new Color(50, 50, 50));
+        titulo.setBorder(BorderFactory.createEmptyBorder(10, 10, 20, 10));
+        add(titulo, BorderLayout.NORTH);
 
-        // Configuración del formulario
-        JPanel formularioPanel = crearFormulario();
+        // Panel central
+        JPanel formularioPanel = new JPanel();
+        formularioPanel.setLayout(new BoxLayout(formularioPanel, BoxLayout.Y_AXIS));
+        formularioPanel.setBorder(BorderFactory.createEmptyBorder(20, 40, 20, 40));
+        formularioPanel.setBackground(new Color(250, 250, 250));
+
+        formularioPanel.add(crearCampo("ID del Usuario:", idField = new JTextField(), true));
+        formularioPanel.add(crearCampo("Nombre:", nombreField = new JTextField(), false));
+        formularioPanel.add(crearCampo("Email:", emailField = new JTextField(), false));
+        formularioPanel.add(crearCombo("Rol:", rolComboBox = new JComboBox<>(new String[]{"Administrador", "Profesor", "Alumno"})));
+        formularioPanel.add(crearCampo("Contraseña:", passwordField = new JPasswordField(), false));
+        formularioPanel.add(crearCampo("Teléfono:", telefonoField = new JTextField(), false));
+        formularioPanel.add(crearCampo("Dirección:", direccionField = new JTextField(), false));
+        formularioPanel.add(crearCampo("Fecha de Nacimiento (YYYY-MM-DD):", fechaNacimientoField = new JTextField(), false));
+        formularioPanel.add(crearCampo("Departamento:", departamentoField = new JTextField(), false));
+
         add(formularioPanel, BorderLayout.CENTER);
 
-        // Configuración de botones
-        JPanel buttonPanel = crearBotones();
+        // Panel de botones
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        buttonPanel.setBackground(new Color(240, 248, 255));
+
+        JButton agregarButton = crearBoton("Agregar", new Color(21, 156, 6));
+        agregarButton.addActionListener(e -> agregarUsuario());
+        buttonPanel.add(agregarButton);
+
+        JButton limpiarButton = crearBoton("Limpiar", new Color(247, 185, 0));
+        limpiarButton.addActionListener(e -> limpiarFormulario());
+        buttonPanel.add(limpiarButton);
+
         add(buttonPanel, BorderLayout.SOUTH);
 
         // Generar ID inicial basado en el rol seleccionado
         actualizarID();
     }
 
-    private JPanel crearFormulario() {
-        JPanel formularioPanel = new JPanel(new GridLayout(9, 2, 10, 10));
-        formularioPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    private JPanel crearCampo(String etiqueta, JComponent campo, boolean soloLectura) {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(new Color(250, 250, 250));
 
-        formularioPanel.add(new JLabel("ID del Usuario:"));
-        idField = new JTextField();
-        idField.setEnabled(false); // Campo solo lectura
-        formularioPanel.add(idField);
+        JLabel label = new JLabel(etiqueta);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        label.setPreferredSize(new Dimension(200, 30));
+        label.setForeground(new Color(50, 50, 50));
 
-        formularioPanel.add(new JLabel("Nombre:"));
-        nombreField = new JTextField();
-        formularioPanel.add(nombreField);
+        campo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        campo.setPreferredSize(new Dimension(200, 30));
+        campo.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
 
-        formularioPanel.add(new JLabel("Email:"));
-        emailField = new JTextField();
-        formularioPanel.add(emailField);
+        if (campo instanceof JTextField) {
+            ((JTextField) campo).setEnabled(!soloLectura);
+        }
 
-        formularioPanel.add(new JLabel("Rol:"));
-        rolComboBox = new JComboBox<>(new String[]{"Administrador", "Profesor", "Alumno"});
-        rolComboBox.addActionListener(e -> actualizarID());
-        formularioPanel.add(rolComboBox);
+        panel.add(label, BorderLayout.WEST);
+        panel.add(campo, BorderLayout.CENTER);
+        panel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
 
-        formularioPanel.add(new JLabel("Contraseña:"));
-        passwordField = new JPasswordField();
-        formularioPanel.add(passwordField);
-
-        formularioPanel.add(new JLabel("Teléfono:"));
-        telefonoField = new JTextField();
-        formularioPanel.add(telefonoField);
-
-        formularioPanel.add(new JLabel("Dirección:"));
-        direccionField = new JTextField();
-        formularioPanel.add(direccionField);
-
-        formularioPanel.add(new JLabel("Fecha de Nacimiento (YYYY-MM-DD):"));
-        fechaNacimientoField = new JTextField();
-        formularioPanel.add(fechaNacimientoField);
-
-        formularioPanel.add(new JLabel("Departamento:"));
-        departamentoField = new JTextField();
-        formularioPanel.add(departamentoField);
-
-        return formularioPanel;
+        return panel;
     }
 
-    private JPanel crearBotones() {
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+    private JPanel crearCombo(String etiqueta, JComboBox<String> comboBox) {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(new Color(250, 250, 250));
 
-        // Botón Agregar
-        JButton agregarButton = new JButton("Agregar");
-        configurarBoton(agregarButton, new Color(34, 139, 34), e -> agregarUsuario());
-        buttonPanel.add(agregarButton);
+        JLabel label = new JLabel(etiqueta);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        label.setPreferredSize(new Dimension(200, 30));
+        label.setForeground(new Color(50, 50, 50));
 
-        // Botón Limpiar
-        JButton limpiarButton = new JButton("Limpiar");
-        configurarBoton(limpiarButton, new Color(220, 53, 69), e -> limpiarFormulario());
-        buttonPanel.add(limpiarButton);
+        comboBox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        comboBox.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+        comboBox.addActionListener(e -> actualizarID());
 
-        return buttonPanel;
+        panel.add(label, BorderLayout.WEST);
+        panel.add(comboBox, BorderLayout.CENTER);
+        panel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+
+        return panel;
     }
 
-    private void configurarBoton(JButton boton, Color colorBase, java.awt.event.ActionListener accion) {
-        boton.setFont(new Font("Arial", Font.BOLD, 14));
-        boton.setBackground(colorBase);
+    private JButton crearBoton(String texto, Color colorFondo) {
+        JButton boton = new JButton(texto);
+        boton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         boton.setForeground(Color.WHITE);
+        boton.setBackground(colorFondo);
         boton.setFocusPainted(false);
-        boton.setPreferredSize(new Dimension(120, 40));
-        boton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.GRAY, 1),
-                BorderFactory.createEmptyBorder(5, 5, 5, 5)
-        ));
-        boton.addActionListener(accion);
+        boton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        boton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        boton.setOpaque(true);
+
         boton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                boton.setBackground(colorBase.darker());
+                boton.setBackground(colorFondo.darker());
             }
 
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                boton.setBackground(colorBase);
+                boton.setBackground(colorFondo);
             }
         });
+
+        return boton;
     }
 
     private void actualizarID() {

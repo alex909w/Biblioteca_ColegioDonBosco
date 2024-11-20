@@ -53,6 +53,7 @@ public class MenuAdministrador extends JFrame {
         // Panel central
         panelCentral = new JPanel();
         panelCentral.setLayout(new BorderLayout());
+        panelCentral.setBackground(FONDO_LATERAL);
         panelCentral.setBorder(BorderFactory.createTitledBorder("Contenido"));
         add(panelCentral, BorderLayout.CENTER);
 
