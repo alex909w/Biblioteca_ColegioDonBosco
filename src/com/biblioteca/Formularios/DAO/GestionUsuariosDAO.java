@@ -1,4 +1,4 @@
-package com.biblioteca.acciones.Usuarios;
+package com.biblioteca.Formularios.DAO;
 
 import com.biblioteca.base_datos.ConexionBaseDatos;
 import org.mindrot.jbcrypt.BCrypt;
@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GestionUsuarios {
+public class GestionUsuariosDAO {
 
     private boolean esRolValido(String rol) {
         return rol.equals("Administrador") || rol.equals("Profesor") || rol.equals("Alumno");
