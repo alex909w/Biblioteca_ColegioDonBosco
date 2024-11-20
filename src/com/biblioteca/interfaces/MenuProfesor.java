@@ -119,7 +119,7 @@ public class MenuProfesor extends JFrame {
 
         for (String submenu : submenus) {
             JButton botonSubmenu = new JButton(submenu);
-            botonSubmenu.setFont(new Font("Arial", Font.PLAIN, 14));
+            botonSubmenu.setFont(FUENTE_PRINCIPAL);
             botonSubmenu.setAlignmentX(Component.LEFT_ALIGNMENT);
             botonSubmenu.setBackground(FONDO_LATERAL);
             botonSubmenu.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 10));
@@ -167,7 +167,7 @@ public class MenuProfesor extends JFrame {
     private void agregarBotonSalir() {
         // Crear el botón "Salir"
         JButton botonSalir = new JButton("Salir");
-        botonSalir.setFont(new Font("Arial", Font.BOLD, 16));
+        botonSalir.setFont(FUENTE_PRINCIPAL);
         botonSalir.setAlignmentX(Component.LEFT_ALIGNMENT);
         botonSalir.setBackground(new Color(255, 100, 100)); // Color rojo claro
         botonSalir.setForeground(Color.WHITE);

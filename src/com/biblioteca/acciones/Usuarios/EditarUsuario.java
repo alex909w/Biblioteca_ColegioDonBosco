@@ -8,6 +8,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.regex.Pattern;
 
 public class EditarUsuario extends JPanel {
     private JComboBox<String> idUsuarioComboBox;
@@ -172,11 +175,8 @@ public class EditarUsuario extends JPanel {
         String fechaNacimiento = fechaNacimientoField.getText();
         String departamento = departamentoField.getText();
 
-        if (nombre.isEmpty() || email.isEmpty() || contraseña.isEmpty() || rol == null) {
-            JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos obligatorios.");
-            return;
-        }
-
+        if (!validarFormulario()) return;
+    
         try (Connection conn = ConexionBaseDatos.getConexion()) {
             String sql = "UPDATE usuarios SET nombre = ?, email = ?, rol = ?, contraseña = ?, telefono = ?, direccion = ?, fecha_nacimiento = ?, departamento = ? WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
@@ -200,6 +200,47 @@ public class EditarUsuario extends JPanel {
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al actualizar usuario: " + ex.getMessage());
         }
+    }
+    private boolean validarFormulario() {
+        String nombre = nombreField.getText().trim();
+        String email = emailField.getText().trim();
+        String contraseña = new String(passwordField.getPassword()).trim();
+        String telefono = telefonoField.getText().trim();
+        String fechaNacimiento = fechaNacimientoField.getText().trim();
+
+        if (nombre.isEmpty() || email.isEmpty() || contraseña.isEmpty() || fechaNacimiento.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos obligatorios.");
+            return false;
+        }
+
+        if (!Pattern.matches("^[a-zA-Z\\s]+$", nombre)) {
+            JOptionPane.showMessageDialog(this, "El nombre solo debe contener letras y espacios.");
+            return false;
+        }
+
+        if (!Pattern.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$", email)) {
+            JOptionPane.showMessageDialog(this, "Por favor, ingrese un correo electrónico válido.");
+            return false;
+        }
+
+        if (contraseña.length() < 8) {
+            JOptionPane.showMessageDialog(this, "La contraseña debe tener al menos 8 caracteres.");
+            return false;
+        }
+
+        if (!telefono.isEmpty() && !Pattern.matches("^\\d{8}$", telefono)) {
+            JOptionPane.showMessageDialog(this, "El número de teléfono debe contener 18 dígitos.");
+            return false;
+        }
+
+        try {
+            LocalDate.parse(fechaNacimiento);
+        } catch (DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(this, "La fecha de nacimiento debe estar en formato YYYY-MM-DD.");
+            return false;
+        }
+
+        return true;
     }
 
     private void limpiarFormulario() {

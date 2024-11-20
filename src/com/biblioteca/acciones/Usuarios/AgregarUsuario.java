@@ -8,6 +8,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.regex.Pattern;
 
 public class AgregarUsuario extends JPanel {
     private JTextField idField, nombreField, emailField, telefonoField, direccionField, fechaNacimientoField, departamentoField;
@@ -18,7 +21,19 @@ public class AgregarUsuario extends JPanel {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createTitledBorder("Agregar Usuario"));
 
-        // Panel central con los campos del formulario
+        // Configuración del formulario
+        JPanel formularioPanel = crearFormulario();
+        add(formularioPanel, BorderLayout.CENTER);
+
+        // Configuración de botones
+        JPanel buttonPanel = crearBotones();
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        // Generar ID inicial basado en el rol seleccionado
+        actualizarID();
+    }
+
+    private JPanel crearFormulario() {
         JPanel formularioPanel = new JPanel(new GridLayout(9, 2, 10, 10));
         formularioPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
@@ -37,7 +52,7 @@ public class AgregarUsuario extends JPanel {
 
         formularioPanel.add(new JLabel("Rol:"));
         rolComboBox = new JComboBox<>(new String[]{"Administrador", "Profesor", "Alumno"});
-        rolComboBox.addActionListener(e -> actualizarID()); // Actualizar el ID automáticamente
+        rolComboBox.addActionListener(e -> actualizarID());
         formularioPanel.add(rolComboBox);
 
         formularioPanel.add(new JLabel("Contraseña:"));
@@ -60,61 +75,45 @@ public class AgregarUsuario extends JPanel {
         departamentoField = new JTextField();
         formularioPanel.add(departamentoField);
 
-        add(formularioPanel, BorderLayout.CENTER);
+        return formularioPanel;
+    }
 
-        // Panel inferior con botones
+    private JPanel crearBotones() {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
 
         // Botón Agregar
         JButton agregarButton = new JButton("Agregar");
-        agregarButton.setFont(new Font("Arial", Font.BOLD, 14));
-        agregarButton.setBackground(new Color(34, 139, 34)); // Verde
-        agregarButton.setForeground(Color.WHITE);
-        agregarButton.setFocusPainted(false);
-        agregarButton.setPreferredSize(new Dimension(120, 40));
-        agregarButton.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.GRAY, 1),
-                BorderFactory.createEmptyBorder(5, 5, 5, 5)
-        ));
-        agregarButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                agregarButton.setBackground(new Color(0, 100, 0)); // Verde oscuro al pasar
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                agregarButton.setBackground(new Color(34, 139, 34)); // Color original
-            }
-        });
-        agregarButton.addActionListener(e -> agregarUsuario());
+        configurarBoton(agregarButton, new Color(34, 139, 34), e -> agregarUsuario());
         buttonPanel.add(agregarButton);
 
         // Botón Limpiar
         JButton limpiarButton = new JButton("Limpiar");
-        limpiarButton.setFont(new Font("Arial", Font.BOLD, 14));
-        limpiarButton.setBackground(new Color(220, 53, 69)); // Rojo
-        limpiarButton.setForeground(Color.WHITE);
-        limpiarButton.setFocusPainted(false);
-        limpiarButton.setPreferredSize(new Dimension(120, 40));
-        limpiarButton.setBorder(BorderFactory.createCompoundBorder(
+        configurarBoton(limpiarButton, new Color(220, 53, 69), e -> limpiarFormulario());
+        buttonPanel.add(limpiarButton);
+
+        return buttonPanel;
+    }
+
+    private void configurarBoton(JButton boton, Color colorBase, java.awt.event.ActionListener accion) {
+        boton.setFont(new Font("Arial", Font.BOLD, 14));
+        boton.setBackground(colorBase);
+        boton.setForeground(Color.WHITE);
+        boton.setFocusPainted(false);
+        boton.setPreferredSize(new Dimension(120, 40));
+        boton.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(Color.GRAY, 1),
                 BorderFactory.createEmptyBorder(5, 5, 5, 5)
         ));
-        limpiarButton.addMouseListener(new java.awt.event.MouseAdapter() {
+        boton.addActionListener(accion);
+        boton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                limpiarButton.setBackground(new Color(176, 0, 32)); // Rojo oscuro al pasar
+                boton.setBackground(colorBase.darker());
             }
 
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                limpiarButton.setBackground(new Color(220, 53, 69)); // Color original
+                boton.setBackground(colorBase);
             }
         });
-        limpiarButton.addActionListener(e -> limpiarFormulario());
-        buttonPanel.add(limpiarButton);
-
-        add(buttonPanel, BorderLayout.SOUTH);
-
-        // Generar ID inicial basado en el rol seleccionado
-        actualizarID();
     }
 
     private void actualizarID() {
@@ -135,7 +134,6 @@ public class AgregarUsuario extends JPanel {
                 prefijo = "XX";
         }
 
-        // Consultar la base de datos para obtener el siguiente ID disponible
         try (Connection conn = ConexionBaseDatos.getConexion()) {
             String sql = "SELECT COUNT(*) + 1 AS siguiente_id FROM usuarios WHERE rol = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
@@ -151,40 +149,69 @@ public class AgregarUsuario extends JPanel {
     }
 
     private void agregarUsuario() {
-        String id = idField.getText();
-        String nombre = nombreField.getText();
-        String email = emailField.getText();
-        String rol = (String) rolComboBox.getSelectedItem();
-        String contraseña = new String(passwordField.getPassword());
-        String telefono = telefonoField.getText();
-        String direccion = direccionField.getText();
-        String fechaNacimiento = fechaNacimientoField.getText();
-        String departamento = departamentoField.getText();
-
-        if (id.isEmpty() || nombre.isEmpty() || email.isEmpty() || contraseña.isEmpty() || fechaNacimiento.isEmpty() || departamento.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos obligatorios.");
-            return;
-        }
+        if (!validarFormulario()) return;
 
         try (Connection conn = ConexionBaseDatos.getConexion()) {
             String sql = "INSERT INTO usuarios (id, nombre, email, rol, contraseña, telefono, direccion, fecha_nacimiento, departamento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, id);
-            stmt.setString(2, nombre);
-            stmt.setString(3, email);
-            stmt.setString(4, rol);
-            stmt.setString(5, contraseña);
-            stmt.setString(6, telefono);
-            stmt.setString(7, direccion);
-            stmt.setString(8, fechaNacimiento);
-            stmt.setString(9, departamento);
+            stmt.setString(1, idField.getText());
+            stmt.setString(2, nombreField.getText());
+            stmt.setString(3, emailField.getText());
+            stmt.setString(4, (String) rolComboBox.getSelectedItem());
+            stmt.setString(5, new String(passwordField.getPassword()));
+            stmt.setString(6, telefonoField.getText());
+            stmt.setString(7, direccionField.getText());
+            stmt.setString(8, fechaNacimientoField.getText());
+            stmt.setString(9, departamentoField.getText());
 
             stmt.executeUpdate();
             JOptionPane.showMessageDialog(this, "Usuario agregado exitosamente.");
-            limpiarFormulario(); // Limpia el formulario tras agregar
+            limpiarFormulario();
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al agregar usuario: " + ex.getMessage());
         }
+    }
+
+    private boolean validarFormulario() {
+        String nombre = nombreField.getText().trim();
+        String email = emailField.getText().trim();
+        String contraseña = new String(passwordField.getPassword()).trim();
+        String telefono = telefonoField.getText().trim();
+        String fechaNacimiento = fechaNacimientoField.getText().trim();
+
+        if (nombre.isEmpty() || email.isEmpty() || contraseña.isEmpty() || fechaNacimiento.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos obligatorios.");
+            return false;
+        }
+
+        if (!Pattern.matches("^[a-zA-Z\\s]+$", nombre)) {
+            JOptionPane.showMessageDialog(this, "El nombre solo debe contener letras y espacios.");
+            return false;
+        }
+
+        if (!Pattern.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$", email)) {
+            JOptionPane.showMessageDialog(this, "Por favor, ingrese un correo electrónico válido.");
+            return false;
+        }
+
+        if (contraseña.length() < 8) {
+            JOptionPane.showMessageDialog(this, "La contraseña debe tener al menos 8 caracteres.");
+            return false;
+        }
+
+        if (!telefono.isEmpty() && !Pattern.matches("^\\d{8}$", telefono)) {
+            JOptionPane.showMessageDialog(this, "El número de teléfono debe contener 18 dígitos.");
+            return false;
+        }
+
+        try {
+            LocalDate.parse(fechaNacimiento);
+        } catch (DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(this, "La fecha de nacimiento debe estar en formato YYYY-MM-DD.");
+            return false;
+        }
+
+        return true;
     }
 
     private void limpiarFormulario() {
@@ -196,6 +223,6 @@ public class AgregarUsuario extends JPanel {
         fechaNacimientoField.setText("");
         departamentoField.setText("");
         rolComboBox.setSelectedIndex(0);
-        actualizarID(); // Actualizar ID basado en el rol inicial
+        actualizarID();
     }
 }
