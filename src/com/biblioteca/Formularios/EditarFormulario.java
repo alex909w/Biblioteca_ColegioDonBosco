@@ -3,18 +3,21 @@ package com.biblioteca.Formularios;
 import com.biblioteca.base_datos.ConexionBaseDatos;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-import javax.swing.border.TitledBorder;
+import java.util.Set;
 
 public class EditarFormulario extends JPanel {
     private JComboBox<String> tablasComboBox;
     private JPanel columnasPanel;
-    private JButton cargarTablaButton, actualizarTablaButton;
+    private JButton cargarTablaButton, actualizarTablaButton, agregarColumnaButton, cancelarButton;
     private boolean usarExistente = false; // Flag para indicar si se usa tabla existente
 
     // Definición de colores para los botones
@@ -22,6 +25,20 @@ public class EditarFormulario extends JPanel {
     private final Color botonCargarTablaHover = new Color(0, 100, 0); // Dark Green
     private final Color botonActualizarTabla = new Color(255, 69, 0); // Orange Red
     private final Color botonActualizarTablaHover = new Color(178, 34, 34); // Firebrick
+    private final Color botonAgregarColumna = new Color(70, 130, 180); // Steel Blue
+    private final Color botonAgregarColumnaHover = new Color(30, 144, 255); // Dodger Blue
+    private final Color botonCancelar = new Color(220, 20, 60); // Crimson
+    private final Color botonCancelarHover = new Color(178, 34, 34); // Firebrick
+
+    // Conjunto de columnas excluidas para una búsqueda eficiente
+    private final Set<String> columnasExcluidasGenerales = new HashSet<>(Arrays.asList(
+            "fecha_registro",
+            "ubicacion_fisica",
+            "cantidad_total",
+            "cantidad_disponible",
+            "estado",
+            "palabras_clave"
+    ));
 
     public EditarFormulario() {
         setLayout(new BorderLayout());
@@ -50,14 +67,14 @@ public class EditarFormulario extends JPanel {
 
         gbc.gridx = 1;
         gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        gbc.weightx = 0.7;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0.5;
         configuracionPanel.add(tablasComboBox = createStyledComboBox(), gbc);
 
-        gbc.gridx = 3;
+        gbc.gridx = 2;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
-        gbc.weightx = 0.0;
+        gbc.weightx = 0.2;
         configuracionPanel.add(cargarTablaButton = createStyledButton("Cargar Tabla", botonCargarTabla, botonCargarTablaHover), gbc);
 
         cargarTablaButton.addActionListener(new ActionListener() {
@@ -85,10 +102,24 @@ public class EditarFormulario extends JPanel {
         ));
         add(scrollPanel, BorderLayout.CENTER);
 
-        // Botón inferior para actualizar tabla
+        // Panel inferior para los botones "Actualizar", "Agregar Nueva Columna" y "Cancelar"
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
-        buttonPanel.add(actualizarTablaButton = createStyledButton("Actualizar Tabla", botonActualizarTabla, botonActualizarTablaHover));
+
+        // Botón "Actualizar Tabla"
+        actualizarTablaButton = createStyledButton("Actualizar Tabla", botonActualizarTabla, botonActualizarTablaHover);
         actualizarTablaButton.addActionListener(e -> actualizarTabla());
+        buttonPanel.add(actualizarTablaButton);
+
+        // Botón "Agregar Nueva Columna"
+        agregarColumnaButton = createStyledButton("Agregar Nueva Columna", botonAgregarColumna, botonAgregarColumnaHover);
+        agregarColumnaButton.addActionListener(e -> agregarNuevaColumna());
+        buttonPanel.add(agregarColumnaButton);
+
+        // Botón "Cancelar"
+        cancelarButton = createStyledButton("Cancelar", botonCancelar, botonCancelarHover);
+        cancelarButton.addActionListener(e -> cancelarAccion());
+        buttonPanel.add(cancelarButton);
+
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
@@ -96,130 +127,140 @@ public class EditarFormulario extends JPanel {
     private List<JTextField> nuevasColumnas = new ArrayList<>(); // Lista para nuevas columnas
 
     private void cargarTablasExistentes() {
-    tablasComboBox.removeAllItems(); // Limpiar el ComboBox antes de cargar
-    String query = "SELECT nombre FROM tipos_documentos"; // Consulta para obtener los nombres de las tablas
+        tablasComboBox.removeAllItems(); // Limpiar el ComboBox antes de cargar
 
-    try (Connection conn = ConexionBaseDatos.getConexion();
-         Statement stmt = conn.createStatement();
-         ResultSet rs = stmt.executeQuery(query)) {
+        // Añadir el elemento predeterminado
+        tablasComboBox.addItem("Opciones");
 
-        while (rs.next()) {
-            tablasComboBox.addItem(rs.getString("nombre"));
+        String query = "SELECT nombre FROM tipos_documentos"; // Consulta para obtener los nombres de las tablas
+
+        try (Connection conn = ConexionBaseDatos.getConexion();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            while (rs.next()) {
+                tablasComboBox.addItem(rs.getString("nombre"));
+            }
+
+            if (tablasComboBox.getItemCount() == 1) { // Solo el elemento predeterminado
+                JOptionPane.showMessageDialog(this, "No se encontraron tablas registradas en 'tipos_documentos'.", "Información", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al cargar tablas desde 'tipos_documentos': " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-
-        if (tablasComboBox.getItemCount() == 0) {
-            JOptionPane.showMessageDialog(this, "No se encontraron tablas registradas en 'tipos_documentos'.", "Información", JOptionPane.INFORMATION_MESSAGE);
-        }
-    } catch (SQLException ex) {
-        JOptionPane.showMessageDialog(this, "Error al cargar tablas desde 'tipos_documentos': " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
-}
-
 
     private void cargarColumnas() {
-    columnasPanel.removeAll();
-    camposDinamicos.clear();
-    nuevasColumnas.clear();
-    usarExistente = false; // Resetear el flag
+        columnasPanel.removeAll();
+        camposDinamicos.clear();
+        nuevasColumnas.clear();
+        usarExistente = false; // Resetear el flag
 
-    String nombreTabla = (String) tablasComboBox.getSelectedItem();
-    if (nombreTabla == null || nombreTabla.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Por favor, seleccione una tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    // Validación del nombre de la tabla
-    if (!nombreTabla.matches("[a-zA-Z0-9_]+")) {
-        JOptionPane.showMessageDialog(this, "El nombre de la tabla contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    try (Connection conn = obtenerConexion(); // Método para validar la conexión
-         Statement stmt = conn.createStatement();
-         ResultSet rs = stmt.executeQuery("DESCRIBE " + nombreTabla)) {
-
-        while (rs.next()) {
-            String campo = rs.getString("Field");
-            String tipo = rs.getString("Type");
-            String extra = rs.getString("Extra");
-
-            JPanel columnaPanel = new JPanel(new GridBagLayout());
-            columnaPanel.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
-                    BorderFactory.createEmptyBorder(10, 10, 10, 10)
-            ));
-            columnaPanel.setBackground(Color.WHITE);
-
-            GridBagConstraints gbcCol = new GridBagConstraints();
-            gbcCol.insets = new Insets(5, 5, 5, 5);
-            gbcCol.fill = GridBagConstraints.HORIZONTAL;
-
-            // Etiqueta del campo
-            gbcCol.gridx = 0;
-            gbcCol.gridy = 0;
-            gbcCol.weightx = 0.4;
-            gbcCol.anchor = GridBagConstraints.WEST;
-            columnaPanel.add(createStyledLabel("Columna: " + campo), gbcCol);
-
-            // Campo para nuevo nombre
-            gbcCol.gridx = 1;
-            gbcCol.gridy = 0;
-            gbcCol.weightx = 0.6;
-            JTextField nuevoNombreField = new JTextField(campo);
-            nuevoNombreField.setToolTipText(campo);
-            columnaPanel.add(nuevoNombreField, gbcCol);
-
-            camposDinamicos.add(nuevoNombreField);
-            columnasPanel.add(columnaPanel);
+        String nombreTabla = (String) tablasComboBox.getSelectedItem();
+        if (nombreTabla == null || nombreTabla.equals("Seleccione una Tabla")) {
+            JOptionPane.showMessageDialog(this, "Por favor, seleccione una tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
         }
 
-        // Botón para agregar nueva columna
-        JButton agregarColumnaButton = crearBotonAgregarColumna();
-        columnasPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        columnasPanel.add(agregarColumnaButton);
-
-    } catch (SQLException ex) {
-        JOptionPane.showMessageDialog(this, "Error al cargar columnas: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        ex.printStackTrace(); // Útil para depuración
-    }
-
-    columnasPanel.revalidate();
-    columnasPanel.repaint();
-}
-
-// Método para obtener una conexión válida
-private Connection obtenerConexion() throws SQLException {
-    Connection conn = ConexionBaseDatos.getConexion();
-    if (conn == null || conn.isClosed()) {
-        throw new SQLException("La conexión a la base de datos no está disponible.");
-    }
-    return conn;
-}
-
-// Método para crear el botón de "Agregar Nueva Columna"
-private JButton crearBotonAgregarColumna() {
-    JButton agregarColumnaButton = new JButton("Agregar Nueva Columna");
-    agregarColumnaButton.setFont(new Font("Arial", Font.BOLD, 14));
-    agregarColumnaButton.setBackground(new Color(135, 206, 250)); // Light Sky Blue
-    agregarColumnaButton.setForeground(Color.WHITE);
-    agregarColumnaButton.setFocusPainted(false);
-    agregarColumnaButton.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-    agregarColumnaButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-    agregarColumnaButton.addMouseListener(new java.awt.event.MouseAdapter() {
-        public void mouseEntered(java.awt.event.MouseEvent evt) {
-            agregarColumnaButton.setBackground(new Color(70, 130, 180)); // Steel Blue
+        // Validación del nombre de la tabla
+        if (!nombreTabla.matches("[a-zA-Z0-9_]+")) {
+            JOptionPane.showMessageDialog(this, "El nombre de la tabla contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
-        public void mouseExited(java.awt.event.MouseEvent evt) {
-            agregarColumnaButton.setBackground(new Color(135, 206, 250)); // Light Sky Blue
+        // Definir el nombre del id_columna dinámico
+        String idColumna = "id_" + nombreTabla.toLowerCase();
+
+        try (Connection conn = obtenerConexion();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("DESCRIBE " + nombreTabla)) {
+
+            while (rs.next()) {
+                String campo = rs.getString("Field").trim();
+
+                // Excluir las columnas predeterminadas y el id_columna dinámico (insensible a mayúsculas)
+                if (columnasExcluidasGenerales.contains(campo.toLowerCase()) || campo.equalsIgnoreCase(idColumna)) {
+                    continue;
+                }
+
+                String tipo = rs.getString("Type");
+                String extra = rs.getString("Extra");
+
+                JPanel columnaPanel = new JPanel(new GridBagLayout());
+                columnaPanel.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
+                        BorderFactory.createEmptyBorder(10, 10, 10, 10)
+                ));
+                columnaPanel.setBackground(Color.WHITE);
+
+                GridBagConstraints gbcCol = new GridBagConstraints();
+                gbcCol.insets = new Insets(5, 5, 5, 5);
+                gbcCol.fill = GridBagConstraints.HORIZONTAL;
+
+                // Etiqueta del campo (formateada)
+                gbcCol.gridx = 0;
+                gbcCol.gridy = 0;
+                gbcCol.weightx = 0.4;
+                gbcCol.anchor = GridBagConstraints.WEST;
+                String etiquetaTexto = formatString(campo);
+                columnaPanel.add(createStyledLabel("Columna: " + etiquetaTexto), gbcCol);
+
+                // Campo para nuevo nombre
+                gbcCol.gridx = 1;
+                gbcCol.gridy = 0;
+                gbcCol.weightx = 0.6;
+                JTextField nuevoNombreField = createStyledTextField();
+                nuevoNombreField.setToolTipText(campo); // Guardar el nombre original
+                columnaPanel.add(nuevoNombreField, gbcCol);
+
+                camposDinamicos.add(nuevoNombreField);
+                columnasPanel.add(columnaPanel);
+            }
+
+            // No es necesario agregar el botón aquí ya que ahora está en el panel inferior
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al cargar columnas: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace(); // Útil para depuración
         }
-    });
 
-    agregarColumnaButton.addActionListener(e -> agregarNuevaColumna());
-    return agregarColumnaButton;
-}
+        columnasPanel.revalidate();
+        columnasPanel.repaint();
+    }
 
+    // Método para obtener una conexión válida
+    private Connection obtenerConexion() throws SQLException {
+        Connection conn = ConexionBaseDatos.getConexion();
+        if (conn == null || conn.isClosed()) {
+            throw new SQLException("La conexión a la base de datos no está disponible.");
+        }
+        return conn;
+    }
+
+    // Método para crear el botón de "Agregar Nueva Columna"
+    private JButton crearBotonAgregarColumna() {
+        JButton agregarColumnaButton = new JButton("Agregar Nueva Columna");
+        agregarColumnaButton.setFont(new Font("Arial", Font.BOLD, 14));
+        agregarColumnaButton.setBackground(botonAgregarColumna);
+        agregarColumnaButton.setForeground(Color.WHITE);
+        agregarColumnaButton.setFocusPainted(false);
+        agregarColumnaButton.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+        agregarColumnaButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        agregarColumnaButton.setPreferredSize(new Dimension(180, 40));
+
+        agregarColumnaButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                agregarColumnaButton.setBackground(botonAgregarColumnaHover);
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                agregarColumnaButton.setBackground(botonAgregarColumna);
+            }
+        });
+
+        agregarColumnaButton.addActionListener(e -> agregarNuevaColumna());
+        return agregarColumnaButton;
+    }
 
     private void agregarNuevaColumna() {
         JPanel nuevaColumnaPanel = new JPanel(new GridBagLayout());
@@ -244,7 +285,7 @@ private JButton crearBotonAgregarColumna() {
         gbcNueva.gridx = 1;
         gbcNueva.gridy = 0;
         gbcNueva.weightx = 0.6;
-        JTextField nuevaColumnaField = new JTextField();
+        JTextField nuevaColumnaField = createStyledTextField();
         nuevaColumnaPanel.add(nuevaColumnaField, gbcNueva);
 
         nuevasColumnas.add(nuevaColumnaField);
@@ -255,10 +296,13 @@ private JButton crearBotonAgregarColumna() {
 
     private void actualizarTabla() {
         String nombreTabla = (String) tablasComboBox.getSelectedItem();
-        if (nombreTabla == null || nombreTabla.isEmpty()) {
+        if (nombreTabla == null || nombreTabla.isEmpty() || nombreTabla.equals("Seleccione una Tabla")) {
             JOptionPane.showMessageDialog(this, "Por favor, seleccione una tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
+
+        // Definir el nombre del id_columna dinámico
+        String idColumna = "id_" + nombreTabla.toLowerCase();
 
         try (Connection conn = ConexionBaseDatos.getConexion();
              Statement stmt = conn.createStatement()) {
@@ -268,8 +312,23 @@ private JButton crearBotonAgregarColumna() {
                 String nuevoNombre = nombreField.getText().trim();
                 String nombreActual = nombreField.getToolTipText();
 
-                if (!nuevoNombre.isEmpty() && !nuevoNombre.equals(nombreActual)) {
-                    String sql = "ALTER TABLE " + nombreTabla + " CHANGE " + nombreActual + " " + nuevoNombre + " VARCHAR(255)";
+                if (!nuevoNombre.isEmpty() && !nuevoNombre.equalsIgnoreCase(nombreActual)) {
+                    // Validar el nuevo nombre (permitir espacios)
+                    if (!nuevoNombre.matches("[a-zA-Z0-9_ ]+")) { // Permitir espacios
+                        JOptionPane.showMessageDialog(this, "El nombre de la columna '" + nuevoNombre + "' contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+
+                    // Sanitizar el nuevo nombre
+                    String nuevoNombreDB = sanitizeName(nuevoNombre);
+
+                    // Verificar que el nuevo nombre no sea la columna ID
+                    if (nuevoNombreDB.equalsIgnoreCase(idColumna)) {
+                        JOptionPane.showMessageDialog(this, "No puedes renombrar otra columna al nombre de la columna ID ('" + idColumna + "').", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+
+                    String sql = "ALTER TABLE " + nombreTabla + " CHANGE " + nombreActual + " " + nuevoNombreDB + " VARCHAR(255)";
                     stmt.executeUpdate(sql);
                 }
             }
@@ -279,7 +338,22 @@ private JButton crearBotonAgregarColumna() {
                 String nuevoNombre = nuevaColumnaField.getText().trim();
 
                 if (!nuevoNombre.isEmpty()) {
-                    String sql = "ALTER TABLE " + nombreTabla + " ADD " + nuevoNombre + " VARCHAR(255)";
+                    // Validar el nuevo nombre (permitir espacios)
+                    if (!nuevoNombre.matches("[a-zA-Z0-9_ ]+")) { // Permitir espacios
+                        JOptionPane.showMessageDialog(this, "El nombre de la nueva columna '" + nuevoNombre + "' contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+
+                    // Sanitizar el nuevo nombre
+                    String nuevoNombreDB = sanitizeName(nuevoNombre);
+
+                    // Verificar que el nuevo nombre no sea la columna ID
+                    if (nuevoNombreDB.equalsIgnoreCase(idColumna)) {
+                        JOptionPane.showMessageDialog(this, "No puedes agregar una columna con el nombre de la columna ID ('" + idColumna + "').", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+
+                    String sql = "ALTER TABLE " + nombreTabla + " ADD " + nuevoNombreDB + " VARCHAR(255)";
                     stmt.executeUpdate(sql);
                 }
             }
@@ -292,6 +366,25 @@ private JButton crearBotonAgregarColumna() {
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al actualizar la tabla: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    // Método para cancelar acciones
+    private void cancelarAccion() {
+        // Limpiar el panel central
+        columnasPanel.removeAll();
+        columnasPanel.revalidate();
+        columnasPanel.repaint();
+
+        // Restablecer el JComboBox al estado predeterminado
+        tablasComboBox.setSelectedIndex(0);
+
+        // Mostrar mensaje al usuario
+        JOptionPane.showMessageDialog(this, "Actualización Cacelada.", "Información", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    // Método para sanitizar nombres: reemplazar espacios con guiones bajos
+    private String sanitizeName(String name) {
+        return name.trim().replaceAll(" +", "_");
     }
 
     private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
@@ -336,6 +429,11 @@ private JButton crearBotonAgregarColumna() {
         textField.setBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 1));
         textField.setBackground(Color.WHITE); // Fondo blanco para mejor contraste
         return textField;
+    }
+
+    // Método para formatear strings: convertir a mayúsculas y reemplazar guiones bajos con espacios
+    private String formatString(String input) {
+        return input.toUpperCase().replace("_", " ");
     }
 
     // Inicialización de componentes después de construir la interfaz
