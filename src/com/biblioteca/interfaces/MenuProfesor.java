@@ -5,6 +5,7 @@ import com.biblioteca.acciones.Mora.VerMoraPendiente;
 import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
 import com.biblioteca.acciones.Prestamos.RegistrarPrestamo;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
@@ -15,7 +16,7 @@ public class MenuProfesor extends JFrame {
     private JPanel panelCentral;
     private JPanel panelIzquierdo;
     private Map<String, JPanel> submenusVisibles;
-    
+
     private final Color COLOR_PRIMARIO = new Color(51, 102, 153);
     private final Color FONDO_LATERAL = new Color(248, 249, 250);
     private final Color COLOR_HOVER = new Color(233, 236, 239);
@@ -48,7 +49,7 @@ public class MenuProfesor extends JFrame {
         setLocationRelativeTo(null);
         setVisible(true);
     }
-    
+
     private JPanel crearPanelSuperior() {
         JPanel panelSuperior = new JPanel(new BorderLayout());
         panelSuperior.setBackground(COLOR_PRIMARIO);
@@ -195,7 +196,8 @@ public class MenuProfesor extends JFrame {
                 nuevoPanel = new RegistrarPrestamo();
                 break;
             case "Ver Historial de Préstamos":
-                nuevoPanel = new HistorialPrestamos();
+                String correoUsuario = obtenerCorreoUsuarioAutenticado();
+                nuevoPanel = new HistorialPrestamos(correoUsuario);
                 break;
             case "Registrar Devolución":
                 nuevoPanel = new RegistrarDevolucion();
@@ -214,6 +216,10 @@ public class MenuProfesor extends JFrame {
 
         panelCentral.revalidate();
         panelCentral.repaint();
+    }
+
+    private String obtenerCorreoUsuarioAutenticado() {
+        return "profesor@colegio.com"; // Simulación del correo del usuario autenticado
     }
 
     public static void main(String[] args) {

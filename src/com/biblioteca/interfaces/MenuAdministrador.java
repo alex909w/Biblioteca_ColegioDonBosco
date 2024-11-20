@@ -14,6 +14,8 @@ import com.biblioteca.acciones.Prestamos.RegistrarPrestamo;
 import com.biblioteca.acciones.Usuarios.EditarUsuario;
 import com.biblioteca.acciones.Usuarios.EliminarUsuario;
 import com.biblioteca.acciones.Usuarios.AgregarUsuario;
+import com.biblioteca.acciones.Usuarios.VerUsuarios; // Importamos la clase VerUsuarios
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
@@ -24,12 +26,11 @@ public class MenuAdministrador extends JFrame {
     private JPanel panelCentral;
     private JPanel panelIzquierdo;
     private Map<String, JPanel> submenusVisibles;
-    
+
     private final Color COLOR_PRIMARIO = new Color(51, 102, 153);
     private final Color FONDO_LATERAL = new Color(248, 249, 250);
     private final Color COLOR_HOVER = new Color(233, 236, 239);
     private final Font FUENTE_PRINCIPAL = new Font("Segoe UI", Font.PLAIN, 14);
-    private final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 24);
 
     public MenuAdministrador() {
         setTitle("Menú Principal: Administrador");
@@ -67,7 +68,7 @@ public class MenuAdministrador extends JFrame {
         setLocationRelativeTo(null); // Centrar la ventana
         setVisible(true);
     }
-    
+
     private JPanel crearPanelSuperior() {
         JPanel panelSuperior = new JPanel(new BorderLayout());
         panelSuperior.setBackground(COLOR_PRIMARIO);
@@ -84,31 +85,31 @@ public class MenuAdministrador extends JFrame {
 
     private void configurarMenu() {
         agregarBotonMenu("Gestión de Usuarios", new String[]{
-            "Agregar Usuario", "Editar Usuario", "Eliminar Usuario"
+                "Agregar Usuario", "Editar Usuario", "Eliminar Usuario"
         });
 
         agregarBotonMenu("Gestión de Formularios", new String[]{
-            "Crear Formulario", "Editar Formulario", "Eliminar Formulario"
+                "Crear Formulario", "Editar Formulario", "Eliminar Formulario"
         });
 
         agregarBotonMenu("Gestión de Inventario", new String[]{
-            "Registrar Artículos", "Editar Artículos", "Eliminar Artículos"
+                "Registrar Artículos", "Editar Artículos", "Eliminar Artículos"
         });
 
         agregarBotonMenu("Consultar Ejemplares", new String[]{
-            "Buscar por Título, Autor o Estado"
+                "Buscar por Título, Autor o Estado"
         });
 
         agregarBotonMenu("Gestión de Ejemplares", new String[]{
-            "Registrar Préstamos", "Historial de Préstamos"
+                "Registrar Préstamos", "Historial de Préstamos"
         });
 
         agregarBotonMenu("Gestión de Devoluciones", new String[]{
-            "Registrar Devolución"
+                "Registrar Devolución"
         });
 
         agregarBotonMenu("Configuraciones", new String[]{
-            "Ver Mora Pendiente"
+                "Ver Mora Pendiente"
         });
     }
 
@@ -150,7 +151,7 @@ public class MenuAdministrador extends JFrame {
             botonSubmenu.setMaximumSize(new Dimension(250, 40));
             botonSubmenu.addActionListener(e -> ejecutarFuncionAdministrador(submenu));
             subMenuPanel.add(botonSubmenu);
-            
+
             // Efecto de hover
             botonSubmenu.addMouseListener(new java.awt.event.MouseAdapter() {
                 @Override
@@ -171,6 +172,11 @@ public class MenuAdministrador extends JFrame {
             subMenuPanel.setVisible(!esVisible);
             panelIzquierdo.revalidate();
             panelIzquierdo.repaint();
+
+            // Si el menú es "Gestión de Usuarios", cargar la tabla de usuarios
+            if (titulo.equals("Gestión de Usuarios")) {
+                cargarTablaUsuarios();
+            }
         });
 
         panelIzquierdo.add(botonMenu);
@@ -272,7 +278,8 @@ public class MenuAdministrador extends JFrame {
                 nuevoPanel = new RegistrarPrestamo();
                 break;
             case "Historial de Préstamos":
-                nuevoPanel = new HistorialPrestamos();
+                String correoUsuario = obtenerCorreoUsuarioAutenticado();
+                nuevoPanel = new HistorialPrestamos(correoUsuario);
                 break;
 
             // Gestión de Devoluciones
@@ -296,6 +303,20 @@ public class MenuAdministrador extends JFrame {
 
         panelCentral.revalidate();
         panelCentral.repaint();
+    }
+
+    private void cargarTablaUsuarios() {
+        panelCentral.removeAll();
+
+        VerUsuarios panelUsuarios = new VerUsuarios(); // Creamos una instancia de VerUsuarios
+        panelCentral.add(panelUsuarios, BorderLayout.CENTER);
+
+        panelCentral.revalidate();
+        panelCentral.repaint();
+    }
+
+    private String obtenerCorreoUsuarioAutenticado() {
+        return "admin@colegio.com";
     }
 
     public static void main(String[] args) {
