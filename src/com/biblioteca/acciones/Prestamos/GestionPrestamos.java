@@ -176,7 +176,15 @@ public class GestionPrestamos extends JPanel {
         JOptionPane.showMessageDialog(this, "Error al cargar datos de la tabla seleccionada: " + e.getMessage());
     }
 }
-
+   
+   private int getColumnIndex(String columnName) {
+    for (int i = 0; i < tablaLibros.getColumnCount(); i++) {
+        if (tablaLibros.getColumnName(i).equalsIgnoreCase(columnName)) {
+            return i;
+        }
+    }
+    return -1; // Retorna -1 si la columna no se encuentra
+}
 
 
    private void registrarPrestamo() {
@@ -193,74 +201,73 @@ public class GestionPrestamos extends JPanel {
     }
 
     String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
-    if (tipoDocumento == null) {
-        JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento.");
+    if (tipoDocumento == null || tipoDocumento.trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento válido.");
         return;
     }
 
-    // Validar el valor de la cantidad disponible
-    Object cantidadObj = tablaLibros.getValueAt(filaSeleccionada, 3); // Índice de "Cantidad Disponible"
-    if (cantidadObj == null || cantidadObj.toString().trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this, "La cantidad disponible no puede estar vacía o ser nula.");
+    // Obtener el índice de la columna "cantidad_disponible"
+    int cantidadDisponibleIndex = getColumnIndex("cantidad_disponible");
+    if (cantidadDisponibleIndex == -1) {
+        JOptionPane.showMessageDialog(this, "La columna 'cantidad_disponible' no se encontró en la tabla.");
         return;
     }
 
-    int cantidadDisponible;
     try {
-        cantidadDisponible = Integer.parseInt(cantidadObj.toString().trim());
-    } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(this, "El valor de la cantidad disponible no es un número válido.");
-        return;
-    }
+        // Obtener valores de la fila seleccionada
+        String idDocumento = tablaLibros.getValueAt(filaSeleccionada, 0).toString(); // Asegúrate que "ID" está en la columna 0
+        String cantidadDisponibleStr = tablaLibros.getValueAt(filaSeleccionada, cantidadDisponibleIndex).toString();
+        int cantidadDisponible = Integer.parseInt(cantidadDisponibleStr);
 
-    if (cantidadDisponible <= 0) {
-        JOptionPane.showMessageDialog(this, "No hay suficientes copias disponibles para realizar el préstamo.");
-        return;
-    }
-
-    int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
-    String idDocumento = (String) tablaLibros.getValueAt(filaSeleccionada, 0); // ID del documento
-
-    try (Connection conexion = ConexionBaseDatos.getConexion()) {
-        // Validar el correo del usuario
-        String usuarioQuery = "SELECT id FROM usuarios WHERE email = ?";
-        PreparedStatement usuarioStmt = conexion.prepareStatement(usuarioQuery);
-        usuarioStmt.setString(1, correo);
-        ResultSet usuarioRs = usuarioStmt.executeQuery();
-
-        if (!usuarioRs.next()) {
-            JOptionPane.showMessageDialog(this, "El correo no está registrado.");
+        if (cantidadDisponible <= 0) {
+            JOptionPane.showMessageDialog(this, "No hay suficientes copias disponibles para realizar el préstamo.");
             return;
         }
 
-        String idUsuario = usuarioRs.getString("id");
+        int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
 
-        // Insertar el préstamo en la tabla `prestamos`
-        String prestamoQuery = "INSERT INTO prestamos (id_usuario, id_documento, dias_prestamo, fecha_prestamo, fecha_devolucion, estado) " +
-                               "VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Pendiente')";
-        PreparedStatement prestamoStmt = conexion.prepareStatement(prestamoQuery);
-        prestamoStmt.setString(1, idUsuario);
-        prestamoStmt.setString(2, idDocumento);
-        prestamoStmt.setInt(3, diasPrestamo);
-        prestamoStmt.setInt(4, diasPrestamo);
-        prestamoStmt.executeUpdate();
+        try (Connection conexion = ConexionBaseDatos.getConexion()) {
+            // Validar correo del usuario
+            String usuarioQuery = "SELECT id FROM usuarios WHERE email = ?";
+            PreparedStatement usuarioStmt = conexion.prepareStatement(usuarioQuery);
+            usuarioStmt.setString(1, correo);
+            ResultSet usuarioRs = usuarioStmt.executeQuery();
 
-        // Actualizar la cantidad disponible
-        String actualizarDisponibilidadQuery = "UPDATE " + tipoDocumento + " SET cantidad_disponible = cantidad_disponible - 1 WHERE id_libros = ?";
-        PreparedStatement actualizarStmt = conexion.prepareStatement(actualizarDisponibilidadQuery);
-        actualizarStmt.setString(1, idDocumento);
-        actualizarStmt.executeUpdate();
+            if (!usuarioRs.next()) {
+                JOptionPane.showMessageDialog(this, "El correo ingresado no pertenece a un usuario registrado.");
+                return;
+            }
 
-        JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.");
+            String idUsuario = usuarioRs.getString("id");
 
-        // Recargar la tabla para reflejar los cambios
-        buscarLibros();
+            // Insertar el préstamo en la tabla `prestamos`
+            String prestamoQuery = "INSERT INTO prestamos (id_usuario, id_documento, dias_prestamo, fecha_prestamo, fecha_devolucion, estado) " +
+                                   "VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Pendiente')";
+            PreparedStatement prestamoStmt = conexion.prepareStatement(prestamoQuery);
+            prestamoStmt.setString(1, idUsuario);
+            prestamoStmt.setString(2, idDocumento);
+            prestamoStmt.setInt(3, diasPrestamo);
+            prestamoStmt.setInt(4, diasPrestamo);
+            prestamoStmt.executeUpdate();
 
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage());
+            // Actualizar la cantidad disponible en la tabla dinámica
+            String actualizarDisponibilidadQuery = "UPDATE " + tipoDocumento + " SET cantidad_disponible = cantidad_disponible - 1 WHERE id_libros = ?";
+            PreparedStatement actualizarStmt = conexion.prepareStatement(actualizarDisponibilidadQuery);
+            actualizarStmt.setString(1, idDocumento);
+            actualizarStmt.executeUpdate();
+
+            JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.");
+
+            // Recargar la tabla para reflejar los cambios
+            buscarLibros();
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage());
+        }
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(this, "La cantidad disponible no es válida. Verifique los datos del documento.");
     }
 }
-
 
 
 }
