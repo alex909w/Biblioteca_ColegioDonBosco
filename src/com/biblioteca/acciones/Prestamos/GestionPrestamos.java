@@ -198,9 +198,20 @@ public class GestionPrestamos extends JPanel {
         return;
     }
 
-    // Obtener el ID del documento y verificar la cantidad disponible
-    String idDocumento = (String) tablaLibros.getValueAt(filaSeleccionada, 0);
-    int cantidadDisponible = (int) tablaLibros.getValueAt(filaSeleccionada, 3); // Columna de "Cantidad Disponible"
+    // Validar el valor de la cantidad disponible
+    Object cantidadObj = tablaLibros.getValueAt(filaSeleccionada, 3); // Índice de "Cantidad Disponible"
+    if (cantidadObj == null || cantidadObj.toString().trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, "La cantidad disponible no puede estar vacía o ser nula.");
+        return;
+    }
+
+    int cantidadDisponible;
+    try {
+        cantidadDisponible = Integer.parseInt(cantidadObj.toString().trim());
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(this, "El valor de la cantidad disponible no es un número válido.");
+        return;
+    }
 
     if (cantidadDisponible <= 0) {
         JOptionPane.showMessageDialog(this, "No hay suficientes copias disponibles para realizar el préstamo.");
@@ -208,6 +219,7 @@ public class GestionPrestamos extends JPanel {
     }
 
     int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
+    String idDocumento = (String) tablaLibros.getValueAt(filaSeleccionada, 0); // ID del documento
 
     try (Connection conexion = ConexionBaseDatos.getConexion()) {
         // Validar el correo del usuario
@@ -233,7 +245,7 @@ public class GestionPrestamos extends JPanel {
         prestamoStmt.setInt(4, diasPrestamo);
         prestamoStmt.executeUpdate();
 
-        // Actualizar la cantidad disponible en la tabla dinámica
+        // Actualizar la cantidad disponible
         String actualizarDisponibilidadQuery = "UPDATE " + tipoDocumento + " SET cantidad_disponible = cantidad_disponible - 1 WHERE id_libros = ?";
         PreparedStatement actualizarStmt = conexion.prepareStatement(actualizarDisponibilidadQuery);
         actualizarStmt.setString(1, idDocumento);
@@ -241,12 +253,14 @@ public class GestionPrestamos extends JPanel {
 
         JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.");
 
-        // Recargar la tabla de documentos para reflejar los cambios
+        // Recargar la tabla para reflejar los cambios
         buscarLibros();
 
     } catch (SQLException e) {
         JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage());
     }
 }
+
+
 
 }
