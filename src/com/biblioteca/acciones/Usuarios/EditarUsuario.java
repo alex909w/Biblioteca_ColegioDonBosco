@@ -8,13 +8,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.time.format.DateTimeParseException;
 import java.util.regex.Pattern;
 
 public class EditarUsuario extends JPanel {
     private JComboBox<String> idUsuarioComboBox;
-    private JTextField nombreField, emailField, telefonoField, direccionField, fechaNacimientoField;
+    private JTextField nombreField, emailField, telefonoField, direccionField;
     private JPasswordField passwordField;
     private JComboBox<String> rolComboBox;
     private JButton actualizarButton, limpiarButton;
@@ -45,8 +43,8 @@ public class EditarUsuario extends JPanel {
         formularioPanel.add(crearCampo("Rol:", rolComboBox = new JComboBox<>(new String[]{"Administrador", "Profesor", "Alumno"}), false));
         formularioPanel.add(crearCampo("Contraseña:", passwordField = new JPasswordField(), false));
         formularioPanel.add(crearCampo("Teléfono:", telefonoField = new JTextField(), false));
+        agregarFormatoTelefonoSimple(telefonoField);
         formularioPanel.add(crearCampo("Dirección:", direccionField = new JTextField(), false));
-        formularioPanel.add(crearCampo("Fecha de Nacimiento (YYYY-MM-DD):", fechaNacimientoField = new JTextField(), false));
 
         add(formularioPanel, BorderLayout.CENTER);
 
@@ -61,6 +59,7 @@ public class EditarUsuario extends JPanel {
 
         limpiarButton = crearBoton("Limpiar", new Color(247, 185, 0));
         limpiarButton.addActionListener(e -> limpiarFormulario());
+        limpiarButton.setForeground(Color.BLACK);
         buttonPanel.add(limpiarButton);
 
         add(buttonPanel, BorderLayout.SOUTH);
@@ -95,7 +94,6 @@ public class EditarUsuario extends JPanel {
                 passwordField.setText(rs.getString("contraseña"));
                 telefonoField.setText(rs.getString("telefono"));
                 direccionField.setText(rs.getString("direccion"));
-                fechaNacimientoField.setText(rs.getString("fecha_nacimiento"));
 
                 habilitarCampos(true);
                 actualizarButton.setEnabled(true);
@@ -113,7 +111,7 @@ public class EditarUsuario extends JPanel {
         if (!validarFormulario()) return;
 
         try (Connection conn = ConexionBaseDatos.getConexion()) {
-            String sql = "UPDATE usuarios SET nombre = ?, email = ?, rol = ?, contraseña = ?, telefono = ?, direccion = ?, fecha_nacimiento = ? WHERE id = ?";
+            String sql = "UPDATE usuarios SET nombre = ?, email = ?, rol = ?, contraseña = ?, telefono = ?, direccion = ? WHERE id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, nombreField.getText().trim());
             stmt.setString(2, emailField.getText().trim());
@@ -121,8 +119,7 @@ public class EditarUsuario extends JPanel {
             stmt.setString(4, new String(passwordField.getPassword()).trim());
             stmt.setString(5, telefonoField.getText().trim());
             stmt.setString(6, direccionField.getText().trim());
-            stmt.setString(7, fechaNacimientoField.getText().trim());
-            stmt.setString(8, idUsuario);
+            stmt.setString(7, idUsuario);
 
             int filasAfectadas = stmt.executeUpdate();
             if (filasAfectadas > 0) {
@@ -135,15 +132,34 @@ public class EditarUsuario extends JPanel {
             JOptionPane.showMessageDialog(this, "Error al actualizar usuario: " + ex.getMessage());
         }
     }
+    
+        private void agregarFormatoTelefonoSimple(JTextField campoTelefono) {
+        campoTelefono.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                String texto = campoTelefono.getText();
+                texto = texto.replaceAll("[^\\d]", ""); // Elimina caracteres no numéricos
+
+                if (texto.length() > 4) {
+                    texto = texto.substring(0, 4) + "-" + texto.substring(4); // Añade el guion después del 4º dígito
+                }
+
+                if (texto.length() > 9) {
+                    texto = texto.substring(0, 9); // Limita a 8 dígitos más el guion
+                }
+
+                campoTelefono.setText(texto);
+            }
+        });
+    }
 
     private boolean validarFormulario() {
         String nombre = nombreField.getText().trim();
         String email = emailField.getText().trim();
         String contraseña = new String(passwordField.getPassword()).trim();
         String telefono = telefonoField.getText().trim();
-        String fechaNacimiento = fechaNacimientoField.getText().trim();
 
-        if (nombre.isEmpty() || email.isEmpty() || contraseña.isEmpty() || fechaNacimiento.isEmpty()) {
+        if (nombre.isEmpty() || email.isEmpty() || contraseña.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos obligatorios.");
             return false;
         }
@@ -163,15 +179,8 @@ public class EditarUsuario extends JPanel {
             return false;
         }
 
-        if (!telefono.isEmpty() && !Pattern.matches("^\\d{8}$", telefono)) {
-            JOptionPane.showMessageDialog(this, "El número de teléfono debe contener 8 dígitos.");
-            return false;
-        }
-
-        try {
-            LocalDate.parse(fechaNacimiento);
-        } catch (DateTimeParseException ex) {
-            JOptionPane.showMessageDialog(this, "La fecha de nacimiento debe estar en formato DD-MM-YYYY.");
+        if (!telefono.isEmpty() && !Pattern.matches("^\\d{4}-\\d{4}$", telefono)) {
+            JOptionPane.showMessageDialog(this, "El número de teléfono debe estar en formato 1234-5678.");
             return false;
         }
 
@@ -184,7 +193,6 @@ public class EditarUsuario extends JPanel {
         passwordField.setText("");
         telefonoField.setText("");
         direccionField.setText("");
-        fechaNacimientoField.setText("");
         rolComboBox.setSelectedIndex(0);
         actualizarButton.setEnabled(false);
     }
@@ -196,7 +204,6 @@ public class EditarUsuario extends JPanel {
         passwordField.setEnabled(habilitar);
         telefonoField.setEnabled(habilitar);
         direccionField.setEnabled(habilitar);
-        fechaNacimientoField.setEnabled(habilitar);
     }
 
     private JLabel createLabel(String text) {
