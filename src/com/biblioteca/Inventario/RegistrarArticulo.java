@@ -248,8 +248,8 @@ private JPanel crearCampoFecha() {
 // Obtener la fecha seleccionada del JDatePicker
 private java.sql.Date obtenerFechaSeleccionada(JDatePickerImpl datePicker) {
     if (datePicker.getModel().getValue() != null) {
-        java.util.Calendar selectedDate = (java.util.Calendar) datePicker.getModel().getValue();
-        return new java.sql.Date(selectedDate.getTimeInMillis());
+        java.util.Date selectedDate = (java.util.Date) datePicker.getModel().getValue();
+        return new java.sql.Date(selectedDate.getTime()); // Convertir a java.sql.Date
     }
     return null; // Si no se seleccionó ninguna fecha
 }
