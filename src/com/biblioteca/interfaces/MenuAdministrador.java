@@ -6,8 +6,8 @@ import com.biblioteca.Inventario.RegistrarArticulo;
 import com.biblioteca.Formularios.CrearFormulario;
 import com.biblioteca.Formularios.EditarFormulario;
 import com.biblioteca.Formularios.EliminarFormulario;
+import com.biblioteca.acciones.Configuraciones.ConfiguracionRoles;
 import com.biblioteca.acciones.Prestamos.RegistrarDevolucion;
-import com.biblioteca.acciones.Mora.VerMoraPendiente;
 import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
 import com.biblioteca.acciones.Prestamos.GestionPrestamos;
@@ -291,7 +291,7 @@ public class MenuAdministrador extends JFrame {
 
             // Configuraciones
             case "Ver Mora Pendiente":
-                nuevoPanel = new VerMoraPendiente();
+                nuevoPanel = new ConfiguracionRoles();
                 break;
 
             default:

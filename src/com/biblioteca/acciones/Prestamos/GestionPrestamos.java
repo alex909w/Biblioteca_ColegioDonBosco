@@ -11,7 +11,6 @@ import java.sql.*;
 
 public class GestionPrestamos extends JPanel {
 
-    private JTextField correoUsuarioField;
     private JTable tablaLibros;
     private JComboBox<String> tiposDocumentosComboBox;
     private JComboBox<Integer> diasPrestamoComboBox;
@@ -24,19 +23,16 @@ public class GestionPrestamos extends JPanel {
         // Estilo general
         setBackground(new Color(240, 240, 240)); // Fondo claro
 
-        // Panel Superior: Búsqueda de Usuario y Tipo de Documento
-        JPanel panelSuperior = new JPanel(new GridLayout(2, 1, 10, 10)); // Grid para alineación
+        // Panel Superior: Búsqueda de Tipo de Documento
+        JPanel panelSuperior = new JPanel(new GridLayout(1, 1, 10, 10)); // Grid para alineación
         panelSuperior.setBorder(new EmptyBorder(10, 10, 10, 10)); // Espacio alrededor
         panelSuperior.setBackground(new Color(255, 255, 255)); // Fondo blanco
 
         JPanel fila1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
         fila1.setBackground(new Color(255, 255, 255));
-        correoUsuarioField = new JTextField(20);
         buscarButton = new JButton("Buscar Documentos");
         tiposDocumentosComboBox = new JComboBox<>();
 
-        fila1.add(new JLabel("Correo del Usuario:"));
-        fila1.add(correoUsuarioField);
         fila1.add(new JLabel("Tipo de Documento:"));
         fila1.add(tiposDocumentosComboBox);
         fila1.add(buscarButton);
@@ -97,177 +93,275 @@ public class GestionPrestamos extends JPanel {
         });
     }
 
+    /**
+     * Método para obtener el correo del usuario autenticado.
+     * Aquí se puede integrar con el sistema de autenticación real.
+     *
+     * @return Correo del usuario autenticado.
+     */
+    private String obtenerCorreoUsuarioAutenticado() {
+        return "admin@colegio.com"; // Ejemplo estático
+    }
+
+    /**
+     * Carga los nombres de las tablas dinámicas desde la tabla tipos_documentos.
+     */
     private void cargarTablasDesdeTiposDocumentos() {
-    try (Connection conexion = ConexionBaseDatos.getConexion()) {
-        // Obtener los nombres de las tablas registradas en la tabla `tipos_documentos`
-        String sql = "SELECT nombre FROM tipos_documentos";
-        PreparedStatement stmt = conexion.prepareStatement(sql);
-        ResultSet rs = stmt.executeQuery();
+        try (Connection conexion = ConexionBaseDatos.getConexion()) {
+            // Obtener los nombres de las tablas registradas en la tabla `tipos_documentos`
+            String sql = "SELECT nombre FROM tipos_documentos";
+            PreparedStatement stmt = conexion.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
 
-        while (rs.next()) {
-            tiposDocumentosComboBox.addItem(rs.getString("nombre"));
-        }
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar tipos de documentos: " + e.getMessage());
-    }
-}
-
-
-   private void buscarLibros() {
-    String correo = correoUsuarioField.getText().trim();
-
-    // Validar que el correo no esté vacío
-    if (correo.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Ingrese el correo del usuario.");
-        return;
-    }
-
-    String tablaSeleccionada = (String) tiposDocumentosComboBox.getSelectedItem();
-
-    // Validar que se haya seleccionado una tabla
-    if (tablaSeleccionada == null) {
-        JOptionPane.showMessageDialog(this, "Seleccione una tabla de tipo de documento.");
-        return;
-    }
-
-    try (Connection conexion = ConexionBaseDatos.getConexion()) {
-        // Verificar que el correo exista en la tabla de usuarios
-        String usuarioQuery = "SELECT id FROM usuarios WHERE email = ?";
-        PreparedStatement usuarioStmt = conexion.prepareStatement(usuarioQuery);
-        usuarioStmt.setString(1, correo);
-        ResultSet usuarioRs = usuarioStmt.executeQuery();
-
-        if (!usuarioRs.next()) {
-            JOptionPane.showMessageDialog(this, "El correo no está registrado.");
-            return;
-        }
-
-        // Cargar todos los datos de la tabla seleccionada
-        String sql = "SELECT * FROM " + tablaSeleccionada;
-        PreparedStatement stmt = conexion.prepareStatement(sql);
-        ResultSet rs = stmt.executeQuery();
-
-        // Obtener el modelo de la tabla y limpiarlo antes de insertar nuevos datos
-        DefaultTableModel modeloTabla = (DefaultTableModel) tablaLibros.getModel();
-        modeloTabla.setRowCount(0);
-
-        // Leer los metadatos para manejar dinámicamente las columnas de la tabla
-        ResultSetMetaData metaData = rs.getMetaData();
-        int columnCount = metaData.getColumnCount();
-
-        // Establecer los nombres de las columnas en la tabla
-        String[] columnas = new String[columnCount];
-        for (int i = 1; i <= columnCount; i++) {
-            columnas[i - 1] = metaData.getColumnName(i);
-        }
-        modeloTabla.setColumnIdentifiers(columnas);
-
-        // Agregar las filas desde el resultado
-        while (rs.next()) {
-            Object[] row = new Object[columnCount];
-            for (int i = 1; i <= columnCount; i++) {
-                row[i - 1] = rs.getObject(i);
+            while (rs.next()) {
+                tiposDocumentosComboBox.addItem(rs.getString("nombre"));
             }
-            modeloTabla.addRow(row);
-        }
 
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar datos de la tabla seleccionada: " + e.getMessage());
-    }
-}
-   
-   private int getColumnIndex(String columnName) {
-    for (int i = 0; i < tablaLibros.getColumnCount(); i++) {
-        if (tablaLibros.getColumnName(i).equalsIgnoreCase(columnName)) {
-            return i;
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar tipos de documentos: " + e.getMessage());
         }
     }
-    return -1; // Retorna -1 si la columna no se encuentra
-}
 
 
-   private void registrarPrestamo() {
-    int filaSeleccionada = tablaLibros.getSelectedRow();
-    if (filaSeleccionada == -1) {
-        JOptionPane.showMessageDialog(this, "Seleccione un documento para registrar el préstamo.");
-        return;
-    }
+    private void buscarLibros() {
+        String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
 
-    String correo = correoUsuarioField.getText().trim();
-    if (correo.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Ingrese el correo del usuario.");
-        return;
-    }
-
-    String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
-    if (tipoDocumento == null || tipoDocumento.trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento válido.");
-        return;
-    }
-
-    // Obtener el índice de la columna "cantidad_disponible"
-    int cantidadDisponibleIndex = getColumnIndex("cantidad_disponible");
-    if (cantidadDisponibleIndex == -1) {
-        JOptionPane.showMessageDialog(this, "La columna 'cantidad_disponible' no se encontró en la tabla.");
-        return;
-    }
-
-    try {
-        // Obtener valores de la fila seleccionada
-        String idDocumento = tablaLibros.getValueAt(filaSeleccionada, 0).toString(); // Asegúrate que "ID" está en la columna 0
-        String cantidadDisponibleStr = tablaLibros.getValueAt(filaSeleccionada, cantidadDisponibleIndex).toString();
-        int cantidadDisponible = Integer.parseInt(cantidadDisponibleStr);
-
-        if (cantidadDisponible <= 0) {
-            JOptionPane.showMessageDialog(this, "No hay suficientes copias disponibles para realizar el préstamo.");
+        // Validar que se haya seleccionado una tabla
+        if (tipoDocumento == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione una tabla de tipo de documento.");
             return;
         }
-
-        int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
 
         try (Connection conexion = ConexionBaseDatos.getConexion()) {
-            // Validar correo del usuario
+            // Obtener el correo del usuario autenticado
+            String correo = obtenerCorreoUsuarioAutenticado();
+            if (correo == null || correo.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No se pudo obtener la información del usuario de la sesión.");
+                return;
+            }
+
+            // Verificar que el correo exista en la tabla de usuarios
             String usuarioQuery = "SELECT id FROM usuarios WHERE email = ?";
             PreparedStatement usuarioStmt = conexion.prepareStatement(usuarioQuery);
             usuarioStmt.setString(1, correo);
             ResultSet usuarioRs = usuarioStmt.executeQuery();
 
             if (!usuarioRs.next()) {
-                JOptionPane.showMessageDialog(this, "El correo ingresado no pertenece a un usuario registrado.");
+                JOptionPane.showMessageDialog(this, "El usuario no está registrado.");
                 return;
             }
 
-            String idUsuario = usuarioRs.getString("id");
+            // Cargar todos los datos de la tabla seleccionada
+            String sql = "SELECT * FROM " + tipoDocumento;
+            PreparedStatement stmt = conexion.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
 
-            // Insertar el préstamo en la tabla `prestamos`
-            String prestamoQuery = "INSERT INTO prestamos (id_usuario, id_documento, dias_prestamo, fecha_prestamo, fecha_devolucion, estado) " +
-                                   "VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Pendiente')";
-            PreparedStatement prestamoStmt = conexion.prepareStatement(prestamoQuery);
-            prestamoStmt.setString(1, idUsuario);
-            prestamoStmt.setString(2, idDocumento);
-            prestamoStmt.setInt(3, diasPrestamo);
-            prestamoStmt.setInt(4, diasPrestamo);
-            prestamoStmt.executeUpdate();
+            // Obtener el modelo de la tabla y limpiarlo antes de insertar nuevos datos
+            DefaultTableModel modeloTabla = (DefaultTableModel) tablaLibros.getModel();
+            modeloTabla.setRowCount(0);
 
-            // Actualizar la cantidad disponible en la tabla dinámica
-            String actualizarDisponibilidadQuery = "UPDATE " + tipoDocumento + " SET cantidad_disponible = cantidad_disponible - 1 WHERE id_libros = ?";
-            PreparedStatement actualizarStmt = conexion.prepareStatement(actualizarDisponibilidadQuery);
-            actualizarStmt.setString(1, idDocumento);
-            actualizarStmt.executeUpdate();
+            // Leer los metadatos para manejar dinámicamente las columnas de la tabla
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
 
-            JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.");
+            // Establecer los nombres de las columnas en la tabla
+            String[] columnas = new String[columnCount];
+            for (int i = 1; i <= columnCount; i++) {
+                columnas[i - 1] = metaData.getColumnName(i);
+            }
+            modeloTabla.setColumnIdentifiers(columnas);
 
-            // Recargar la tabla para reflejar los cambios
-            buscarLibros();
+            // Agregar las filas desde el resultado
+            while (rs.next()) {
+                Object[] row = new Object[columnCount];
+                for (int i = 1; i <= columnCount; i++) {
+                    row[i - 1] = rs.getObject(i);
+                }
+                modeloTabla.addRow(row);
+            }
 
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "Error al cargar datos de la tabla seleccionada: " + e.getMessage());
         }
-    } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(this, "La cantidad disponible no es válida. Verifique los datos del documento.");
     }
-}
 
+    /**
+     * Obtiene el índice de una columna en la tabla basada en el nombre de la columna.
+     *
+     * @param columnName Nombre de la columna.
+     * @return Índice de la columna o -1 si no se encuentra.
+     */
+    private int getColumnIndex(String columnName) {
+        for (int i = 0; i < tablaLibros.getColumnCount(); i++) {
+            if (tablaLibros.getColumnName(i).equalsIgnoreCase(columnName)) {
+                return i;
+            }
+        }
+        return -1; // Retorna -1 si la columna no se encuentra
+    }
+
+
+    private void registrarPrestamo() {
+        int filaSeleccionada = tablaLibros.getSelectedRow();
+        if (filaSeleccionada == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccione un documento para registrar el préstamo.");
+            return;
+        }
+
+        String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
+        if (tipoDocumento == null || tipoDocumento.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento válido.");
+            return;
+        }
+
+        // Obtener el índice de la columna "cantidad_disponible"
+        int cantidadDisponibleIndex = getColumnIndex("cantidad_disponible");
+        if (cantidadDisponibleIndex == -1) {
+            JOptionPane.showMessageDialog(this, "La columna 'cantidad_disponible' no se encontró en la tabla.");
+            return;
+        }
+
+        try {
+            // Obtener el correo del usuario autenticado
+            String correo = obtenerCorreoUsuarioAutenticado();
+            if (correo == null || correo.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No se pudo obtener la información del usuario de la sesión.");
+                return;
+            }
+
+            // Obtener valores de la fila seleccionada
+            String idDocumento = tablaLibros.getValueAt(filaSeleccionada, 0).toString(); // Asegúrate que "ID" está en la columna 0
+            String cantidadDisponibleStr = tablaLibros.getValueAt(filaSeleccionada, cantidadDisponibleIndex).toString();
+            int cantidadDisponible = Integer.parseInt(cantidadDisponibleStr);
+
+            if (cantidadDisponible <= 0) {
+                JOptionPane.showMessageDialog(this, "No hay suficientes copias disponibles para realizar el préstamo.");
+                return;
+            }
+
+            int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
+
+            try (Connection conexion = ConexionBaseDatos.getConexion()) {
+                // Validar correo del usuario
+                String usuarioQuery = "SELECT id, rol FROM usuarios WHERE email = ?";
+                PreparedStatement usuarioStmt = conexion.prepareStatement(usuarioQuery);
+                usuarioStmt.setString(1, correo);
+                ResultSet usuarioRs = usuarioStmt.executeQuery();
+
+                if (!usuarioRs.next()) {
+                    JOptionPane.showMessageDialog(this, "El correo ingresado no pertenece a un usuario registrado.");
+                    return;
+                }
+
+                String idUsuario = usuarioRs.getString("id");
+                String rolUsuario = usuarioRs.getString("rol").toLowerCase();
+
+                // Validar límite de préstamos por rol
+                if (!validarLimitePrestamos(idUsuario, conexion)) {
+                    JOptionPane.showMessageDialog(this, "El usuario ha alcanzado el límite de préstamos permitidos para su rol.");
+                    return;
+                }
+
+                // Insertar el préstamo en la tabla `prestamos`
+                String prestamoQuery = "INSERT INTO prestamos (id_usuario, id_documento, dias_prestamo, fecha_prestamo, fecha_devolucion, estado) " +
+                                       "VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Pendiente')";
+                PreparedStatement prestamoStmt = conexion.prepareStatement(prestamoQuery);
+                prestamoStmt.setString(1, idUsuario);
+                prestamoStmt.setString(2, idDocumento);
+                prestamoStmt.setInt(3, diasPrestamo);
+                prestamoStmt.setInt(4, diasPrestamo);
+                prestamoStmt.executeUpdate();
+
+                // Actualizar la cantidad disponible en la tabla dinámica
+                String actualizarDisponibilidadQuery = "UPDATE " + tipoDocumento + " SET cantidad_disponible = cantidad_disponible - 1 WHERE id_libros = ?";
+                PreparedStatement actualizarStmt = conexion.prepareStatement(actualizarDisponibilidadQuery);
+                actualizarStmt.setString(1, idDocumento);
+                actualizarStmt.executeUpdate();
+
+                JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.");
+
+                // Recargar la tabla para reflejar los cambios
+                buscarLibros();
+
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage());
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "La cantidad disponible no es válida. Verifique los datos del documento.");
+        }
+    }
+
+    /**
+     * Valida si el usuario ha alcanzado el límite de préstamos permitidos según su rol.
+     *
+     * @param idUsuario ID del usuario.
+     * @param conexion  Conexión a la base de datos.
+     * @return true si puede realizar más préstamos, false de lo contrario.
+     * @throws SQLException si ocurre un error en la consulta.
+     */
+    private boolean validarLimitePrestamos(String idUsuario, Connection conexion) throws SQLException {
+        // Obtener el rol del usuario
+        String rolQuery = "SELECT rol FROM usuarios WHERE id = ?";
+        PreparedStatement rolStmt = conexion.prepareStatement(rolQuery);
+        rolStmt.setString(1, idUsuario);
+        ResultSet rolRs = rolStmt.executeQuery();
+
+        if (rolRs.next()) {
+            String rol = rolRs.getString("rol").toLowerCase();
+
+            // Obtener el límite de préstamos para el rol del usuario
+            String limiteQuery = "SELECT valor FROM configuraciones WHERE clave = ?";
+            PreparedStatement limiteStmt = conexion.prepareStatement(limiteQuery);
+            limiteStmt.setString(1, "limite_prestamos_" + rol);
+
+            ResultSet limiteRs = limiteStmt.executeQuery();
+            if (limiteRs.next()) {
+                int limitePrestamos = limiteRs.getInt("valor");
+
+                // Contar la cantidad de préstamos activos del usuario
+                String prestamosQuery = "SELECT COUNT(*) AS prestamos_activos FROM prestamos WHERE id_usuario = ? AND estado = 'Pendiente'";
+                PreparedStatement prestamosStmt = conexion.prepareStatement(prestamosQuery);
+                prestamosStmt.setString(1, idUsuario);
+
+                ResultSet prestamosRs = prestamosStmt.executeQuery();
+                if (prestamosRs.next()) {
+                    int prestamosActivos = prestamosRs.getInt("prestamos_activos");
+                    return prestamosActivos < limitePrestamos; // Validar si está dentro del límite
+                }
+            }
+        }
+        return false; // Por defecto, denegar si algo falla
+    }
+
+    /**
+     * Obtiene la mora diaria asociada al rol del usuario.
+     *
+     * @param idUsuario ID del usuario.
+     * @param conexion  Conexión a la base de datos.
+     * @return Mora diaria.
+     * @throws SQLException si ocurre un error en la consulta.
+     */
+    private double obtenerMoraDiariaPorRol(String idUsuario, Connection conexion) throws SQLException {
+        // Obtener el rol del usuario
+        String rolQuery = "SELECT rol FROM usuarios WHERE id = ?";
+        PreparedStatement rolStmt = conexion.prepareStatement(rolQuery);
+        rolStmt.setString(1, idUsuario);
+        ResultSet rolRs = rolStmt.executeQuery();
+
+        if (rolRs.next()) {
+            String rol = rolRs.getString("rol").toLowerCase();
+
+            // Obtener la mora diaria asociada al rol
+            String moraQuery = "SELECT valor FROM configuraciones WHERE clave = ?";
+            PreparedStatement moraStmt = conexion.prepareStatement(moraQuery);
+            moraStmt.setString(1, "mora_" + rol);
+
+            ResultSet moraRs = moraStmt.executeQuery();
+            if (moraRs.next()) {
+                return moraRs.getDouble("valor"); // Retornar la mora configurada
+            }
+        }
+        return 1.50; 
+    }
 
 }

@@ -1,7 +1,7 @@
 package com.biblioteca.interfaces;
 
+import com.biblioteca.acciones.Configuraciones.ConfiguracionRoles;
 import com.biblioteca.acciones.Prestamos.RegistrarDevolucion;
-import com.biblioteca.acciones.Mora.VerMoraPendiente;
 import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
 import com.biblioteca.acciones.Prestamos.GestionPrestamos;
@@ -73,9 +73,6 @@ public class MenuProfesor extends JFrame {
         });
         agregarBotonMenu("Gestión de Devoluciones", new String[]{
             "Registrar Devolución"
-        });
-        agregarBotonMenu("Configuraciones", new String[]{
-            "Ver Mora Pendiente"
         });
     }
 
@@ -201,9 +198,6 @@ public class MenuProfesor extends JFrame {
                 break;
             case "Registrar Devolución":
                 nuevoPanel = new RegistrarDevolucion();
-                break;
-            case "Ver Mora Pendiente":
-                nuevoPanel = new VerMoraPendiente();
                 break;
             default:
                 nuevoPanel = new JPanel();

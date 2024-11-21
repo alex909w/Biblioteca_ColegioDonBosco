@@ -1,6 +1,5 @@
 package com.biblioteca.interfaces;
 
-import com.biblioteca.acciones.Mora.VerMoraPendiente;
 import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
 import com.biblioteca.acciones.Prestamos.ConsultarPrestamos;
@@ -198,9 +197,6 @@ public class MenuAlumno extends JFrame {
                 break;
             case "Ver Historial de Préstamos":
                 nuevoPanel = new HistorialPrestamos(correoUsuario);
-                break;
-            case "Ver Mora Pendiente":
-                nuevoPanel = new VerMoraPendiente();
                 break;
             case "Ver Estado de Devoluciones":
                 nuevoPanel = new JPanel();

@@ -14,22 +14,18 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import javax.swing.border.EmptyBorder;
-import java.sql.ResultSetMetaData;
-import java.util.ArrayList;
-import java.util.List;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 public class RegistrarDevolucion extends JPanel {
-    private JTable prestamosTable; // Tabla de préstamos
-    private DefaultTableModel tableModel; // Modelo de la tabla
-    private JTextField idPrestamoField, idDocumentoField, fechaDevolucionField; // Campos de texto
-    private JComboBox<String> estadoComboBox; // ComboBox para estado
-    private JButton registrarButton; // Botón para registrar devolución
+    private JTable prestamosTable;
+    private DefaultTableModel tableModel;
+    private JTextField idPrestamoField, idDocumentoField, fechaDevolucionField;
+    private JComboBox<String> estadoComboBox;
+    private JButton registrarButton;
 
     public RegistrarDevolucion() {
-        setLayout(new BorderLayout(10, 10)); // Layout del panel
+        setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(new Color(70, 130, 180), 2),
                 "Registrar Devolución",
@@ -37,7 +33,7 @@ public class RegistrarDevolucion extends JPanel {
                 TitledBorder.TOP,
                 new Font("Arial", Font.BOLD, 18),
                 new Color(70, 130, 180)
-        )); // Borde del panel
+        ));
 
         // Configuración de la tabla de préstamos
         tableModel = new DefaultTableModel(new Object[]{"ID Préstamo", "ID Documento", "Fecha Préstamo", "Estado"}, 0);
@@ -45,7 +41,7 @@ public class RegistrarDevolucion extends JPanel {
         prestamosTable.setFont(new Font("Arial", Font.PLAIN, 14));
         prestamosTable.setRowHeight(25);
         prestamosTable.setFillsViewportHeight(true);
-        prestamosTable.getTableHeader().setReorderingAllowed(false); // Evitar reordenar columnas
+        prestamosTable.getTableHeader().setReorderingAllowed(false);
 
         JScrollPane scrollPane = new JScrollPane(prestamosTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder(
@@ -55,89 +51,82 @@ public class RegistrarDevolucion extends JPanel {
                 TitledBorder.TOP,
                 new Font("Arial", Font.BOLD, 14),
                 Color.DARK_GRAY
-        )); // Borde del scroll
-        add(scrollPane, BorderLayout.CENTER); // Añadir scroll al centro
+        ));
+        add(scrollPane, BorderLayout.CENTER);
 
         // Configuración del formulario de devolución
         JPanel formPanel = new JPanel(new GridBagLayout());
-        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20)); // Espaciado
+        formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10); // Márgenes
+        gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Campo ID Préstamo
         gbc.gridx = 0;
         gbc.gridy = 0;
-        formPanel.add(createStyledLabel("ID Préstamo:"), gbc); // Añadir etiqueta
+        formPanel.add(createStyledLabel("ID Préstamo:"), gbc);
 
         idPrestamoField = createStyledTextField();
-        idPrestamoField.setEditable(false); // No editable
+        idPrestamoField.setEditable(false);
         gbc.gridx = 1;
-        formPanel.add(idPrestamoField, gbc); // Añadir campo
+        formPanel.add(idPrestamoField, gbc);
 
-        // Campo ID Documento
         gbc.gridx = 0;
         gbc.gridy = 1;
-        formPanel.add(createStyledLabel("ID Documento:"), gbc); // Añadir etiqueta
+        formPanel.add(createStyledLabel("ID Documento:"), gbc);
 
         idDocumentoField = createStyledTextField();
-        idDocumentoField.setEditable(false); // No editable
+        idDocumentoField.setEditable(false);
         gbc.gridx = 1;
-        formPanel.add(idDocumentoField, gbc); // Añadir campo
+        formPanel.add(idDocumentoField, gbc);
 
-        // Campo Fecha Real de Devolución
         gbc.gridx = 0;
         gbc.gridy = 2;
-        formPanel.add(createStyledLabel("Fecha Real de Devolución (YYYY-MM-DD):"), gbc); // Añadir etiqueta
+        formPanel.add(createStyledLabel("Fecha Real de Devolución (YYYY-MM-DD):"), gbc);
 
         fechaDevolucionField = createStyledTextField();
         gbc.gridx = 1;
-        formPanel.add(fechaDevolucionField, gbc); // Añadir campo
+        formPanel.add(fechaDevolucionField, gbc);
 
-        // Campo Estado del Documento
         gbc.gridx = 0;
         gbc.gridy = 3;
-        formPanel.add(createStyledLabel("Estado del Documento:"), gbc); // Añadir etiqueta
+        formPanel.add(createStyledLabel("Estado del Documento:"), gbc);
 
         estadoComboBox = createStyledComboBox(new String[]{"Bueno", "Dañado", "En Reparación"});
         gbc.gridx = 1;
-        formPanel.add(estadoComboBox, gbc); // Añadir ComboBox
+        formPanel.add(estadoComboBox, gbc);
 
-        // Botón Registrar Devolución
         registrarButton = createStyledButton("Registrar Devolución", new Color(34, 139, 34), new Color(0, 100, 0));
-        registrarButton.addActionListener(e -> registrarDevolucion()); // Acción del botón
+        registrarButton.addActionListener(e -> registrarDevolucion());
         gbc.gridx = 0;
         gbc.gridy = 4;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
-        formPanel.add(registrarButton, gbc); // Añadir botón
+        formPanel.add(registrarButton, gbc);
 
-        add(formPanel, BorderLayout.SOUTH); // Añadir formulario al sur
+        add(formPanel, BorderLayout.SOUTH);
 
-        cargarPrestamos(); // Cargar préstamos al iniciar
+        cargarPrestamos();
 
-        // Evento de selección en la tabla
         prestamosTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             public void valueChanged(ListSelectionEvent event) {
                 int selectedRow = prestamosTable.getSelectedRow();
                 if (selectedRow != -1) {
-                    idPrestamoField.setText(prestamosTable.getValueAt(selectedRow, 0).toString()); // Set ID Préstamo
-                    idDocumentoField.setText(prestamosTable.getValueAt(selectedRow, 1).toString()); // Set ID Documento
+                    idPrestamoField.setText(prestamosTable.getValueAt(selectedRow, 0).toString());
+                    idDocumentoField.setText(prestamosTable.getValueAt(selectedRow, 1).toString());
                 }
             }
         });
     }
 
     private void cargarPrestamos() {
-        try (Connection conn = ConexionBaseDatos.getConexion()) { // Conexión a BD
+        try (Connection conn = ConexionBaseDatos.getConexion()) {
             String prestamosQuery =
                     "SELECT id AS id_prestamo, id_documento, fecha_prestamo, estado " +
-                    "FROM prestamos " +
-                    "WHERE estado != 'Devuelto'"; // Consulta de préstamos pendientes
+                    "FROM prestamos WHERE estado != 'Devuelto'";
             PreparedStatement stmt = conn.prepareStatement(prestamosQuery);
-            ResultSet rs = stmt.executeQuery(); // Ejecutar consulta
+            ResultSet rs = stmt.executeQuery();
 
-            tableModel.setRowCount(0); // Limpiar tabla
+            tableModel.setRowCount(0);
 
             while (rs.next()) {
                 tableModel.addRow(new Object[]{
@@ -145,291 +134,216 @@ public class RegistrarDevolucion extends JPanel {
                         rs.getString("id_documento"),
                         rs.getDate("fecha_prestamo"),
                         rs.getString("estado")
-                }); // Añadir fila
+                });
             }
 
             if (tableModel.getRowCount() == 0) {
                 JOptionPane.showMessageDialog(this, "No se encontraron préstamos pendientes.", "Información", JOptionPane.INFORMATION_MESSAGE);
             }
-        } catch (SQLException ex) { // Manejar excepciones SQL
+        } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al cargar los préstamos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
- private void registrarDevolucion() {
-    String idPrestamoStr = idPrestamoField.getText().trim();
-    String idDocumento = idDocumentoField.getText().trim();
-    String estadoDocumento = (String) estadoComboBox.getSelectedItem();
-    String fechaDevolucionStr = fechaDevolucionField.getText().trim();
+    private void registrarDevolucion() {
+        String idPrestamoStr = idPrestamoField.getText().trim();
+        String idDocumento = idDocumentoField.getText().trim();
+        String estadoDocumento = (String) estadoComboBox.getSelectedItem();
+        String fechaDevolucionStr = fechaDevolucionField.getText().trim();
 
-    if (idPrestamoStr.isEmpty() || idDocumento.isEmpty() || fechaDevolucionStr.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    LocalDate fechaDevolucion;
-    try {
-        fechaDevolucion = LocalDate.parse(fechaDevolucionStr, DateTimeFormatter.ISO_LOCAL_DATE);
-    } catch (DateTimeParseException e) {
-        JOptionPane.showMessageDialog(this, "Formato de fecha incorrecto. Use YYYY-MM-DD.", "Error", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    try (Connection conn = ConexionBaseDatos.getConexion()) {
-        String detallesPrestamoQuery = "SELECT fecha_prestamo, fecha_devolucion, id_usuario FROM prestamos WHERE id = ?";
-        PreparedStatement detallesStmt = conn.prepareStatement(detallesPrestamoQuery);
-        detallesStmt.setInt(1, Integer.parseInt(idPrestamoStr));
-        ResultSet detallesRs = detallesStmt.executeQuery();
-
-        if (!detallesRs.next()) {
-            JOptionPane.showMessageDialog(this, "No se encontraron detalles del préstamo.", "Error", JOptionPane.ERROR_MESSAGE);
+        if (idPrestamoStr.isEmpty() || idDocumento.isEmpty() || fechaDevolucionStr.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        LocalDate fechaDevolucionProgramada = detallesRs.getDate("fecha_devolucion").toLocalDate();
-        String idUsuario = detallesRs.getString("id_usuario");
-
-        long diasMora = 0;
-        if (fechaDevolucion.isAfter(fechaDevolucionProgramada)) {
-            diasMora = ChronoUnit.DAYS.between(fechaDevolucionProgramada, fechaDevolucion);
+        LocalDate fechaDevolucion;
+        try {
+            fechaDevolucion = LocalDate.parse(fechaDevolucionStr, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (DateTimeParseException e) {
+            JOptionPane.showMessageDialog(this, "Formato de fecha incorrecto. Use YYYY-MM-DD.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
-        double moraDiaria = obtenerMoraDiaria(conn);
-        double montoMora = diasMora * moraDiaria;
+        try (Connection conn = ConexionBaseDatos.getConexion()) {
+            String detallesPrestamoQuery = "SELECT fecha_devolucion, id_usuario FROM prestamos WHERE id = ?";
+            PreparedStatement detallesStmt = conn.prepareStatement(detallesPrestamoQuery);
+            detallesStmt.setInt(1, Integer.parseInt(idPrestamoStr));
+            ResultSet detallesRs = detallesStmt.executeQuery();
 
-        if (diasMora > 0) {
-            int respuesta = JOptionPane.showConfirmDialog(this,
-                    "El préstamo tiene mora de $" + String.format("%.2f", montoMora) + ".\n¿Desea pagar la mora ahora?",
-                    "Mora detectada",
-                    JOptionPane.YES_NO_OPTION);
-
-            if (respuesta == JOptionPane.YES_OPTION) {
-                pagarMora(conn, idPrestamoStr, montoMora); // Registrar el pago de la mora
-            } else {
-                // Actualizar el estado del préstamo a "Mora" sin devolver el libro
-                String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Mora', dias_mora = ?, monto_mora = ? WHERE id = ?";
-                PreparedStatement actualizarPrestamoStmt = conn.prepareStatement(actualizarPrestamoQuery);
-                actualizarPrestamoStmt.setLong(1, diasMora);
-                actualizarPrestamoStmt.setDouble(2, montoMora);
-                actualizarPrestamoStmt.setInt(3, Integer.parseInt(idPrestamoStr));
-                actualizarPrestamoStmt.executeUpdate();
-
-                JOptionPane.showMessageDialog(this, "El estado del préstamo permanece en Mora.\nLos días seguirán acumulándose.", "Información", JOptionPane.INFORMATION_MESSAGE);
-                limpiarFormulario(); // Limpiar formulario
-                return; // Salir del método
+            if (!detallesRs.next()) {
+                JOptionPane.showMessageDialog(this, "No se encontraron detalles del préstamo.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
+
+            LocalDate fechaDevolucionProgramada = detallesRs.getDate("fecha_devolucion").toLocalDate();
+            String idUsuario = detallesRs.getString("id_usuario");
+
+            long diasMora = 0;
+            if (fechaDevolucion.isAfter(fechaDevolucionProgramada)) {
+                diasMora = ChronoUnit.DAYS.between(fechaDevolucionProgramada, fechaDevolucion);
+            }
+
+            double moraDiaria = obtenerMoraDiariaPorRol(idUsuario, conn);
+            double montoMora = diasMora * moraDiaria;
+
+            if (diasMora > 0) {
+                int respuesta = JOptionPane.showConfirmDialog(this,
+                        "El préstamo tiene mora de $" + String.format("%.2f", montoMora) + ".\n¿Desea pagar la mora ahora?",
+                        "Mora detectada",
+                        JOptionPane.YES_NO_OPTION);
+
+                if (respuesta == JOptionPane.YES_OPTION) {
+                    pagarMora(conn, idPrestamoStr, montoMora);
+                } else {
+                    actualizarEstadoMora(conn, idPrestamoStr, diasMora, montoMora);
+                    JOptionPane.showMessageDialog(this, "El estado del préstamo permanece en Mora.\nLos días seguirán acumulándose.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                    limpiarFormulario();
+                    return;
+                }
+            }
+
+            registrarDevolucionYActualizar(conn, idPrestamoStr, idDocumento, estadoDocumento, idUsuario, fechaDevolucion, diasMora, montoMora);
+            JOptionPane.showMessageDialog(this, "Devolución registrada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            cargarPrestamos();
+            limpiarFormulario();
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al registrar devolución: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
 
-        // Insertar la devolución en la tabla `devoluciones`
-        String insertarDevolucionQuery = "INSERT INTO devoluciones (id_prestamo, id_usuario, id_documento, fecha_devolucion_real, dias_mora, monto_mora) VALUES (?, ?, ?, ?, ?, ?)";
-        PreparedStatement insertarDevolucionStmt = conn.prepareStatement(insertarDevolucionQuery);
-        insertarDevolucionStmt.setInt(1, Integer.parseInt(idPrestamoStr));
-        insertarDevolucionStmt.setString(2, idUsuario);
-        insertarDevolucionStmt.setString(3, idDocumento);
-        insertarDevolucionStmt.setDate(4, java.sql.Date.valueOf(fechaDevolucion));
-        insertarDevolucionStmt.setLong(5, diasMora);
-        insertarDevolucionStmt.setDouble(6, montoMora);
-        insertarDevolucionStmt.executeUpdate();
+    private void pagarMora(Connection conn, String idPrestamoStr, double montoMora) throws SQLException {
+        String registrarPagoQuery = "INSERT INTO pagos_mora (id_prestamo, monto_pagado, fecha_pago) VALUES (?, ?, NOW())";
+        PreparedStatement registrarPagoStmt = conn.prepareStatement(registrarPagoQuery);
+        registrarPagoStmt.setInt(1, Integer.parseInt(idPrestamoStr));
+        registrarPagoStmt.setDouble(2, montoMora);
+        registrarPagoStmt.executeUpdate();
 
-        String tablaEspecifica = determinarTablaEspecificaPorIdDocumento(idDocumento, conn);
-        if (tablaEspecifica != null) {
-            String actualizarDocumentoQuery = "UPDATE " + tablaEspecifica + " SET cantidad_disponible = cantidad_disponible + 1, estado = ? WHERE id_libros = ?";
-            PreparedStatement actualizarDocStmt = conn.prepareStatement(actualizarDocumentoQuery);
-            actualizarDocStmt.setString(1, estadoDocumento);
-            actualizarDocStmt.setString(2, idDocumento);
-            actualizarDocStmt.executeUpdate();
-        }
+        String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Devuelto', dias_mora = 0, monto_mora = 0 WHERE id = ?";
+        PreparedStatement actualizarPrestamoStmt = conn.prepareStatement(actualizarPrestamoQuery);
+        actualizarPrestamoStmt.setInt(1, Integer.parseInt(idPrestamoStr));
+        actualizarPrestamoStmt.executeUpdate();
 
-        String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Devuelto', dias_mora = ?, monto_mora = ? WHERE id = ?";
+        JOptionPane.showMessageDialog(this, "La mora de $" + String.format("%.2f", montoMora) + " ha sido pagada.\nEl préstamo se ha registrado como Devuelto.", "Pago exitoso", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void actualizarEstadoMora(Connection conn, String idPrestamoStr, long diasMora, double montoMora) throws SQLException {
+        String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Mora', dias_mora = ?, monto_mora = ? WHERE id = ?";
         PreparedStatement actualizarPrestamoStmt = conn.prepareStatement(actualizarPrestamoQuery);
         actualizarPrestamoStmt.setLong(1, diasMora);
         actualizarPrestamoStmt.setDouble(2, montoMora);
         actualizarPrestamoStmt.setInt(3, Integer.parseInt(idPrestamoStr));
         actualizarPrestamoStmt.executeUpdate();
-
-        JOptionPane.showMessageDialog(this, "Devolución registrada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-        cargarPrestamos(); // Recargar la tabla de préstamos pendientes
-        limpiarFormulario(); // Limpiar formulario
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al registrar devolución: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
-}
 
-private void pagarMora(Connection conn, String idPrestamoStr, double montoMora) throws SQLException {
-    // Registrar el pago de la mora (puedes personalizar esta lógica según tu base de datos)
-    String registrarPagoQuery = "INSERT INTO pagos_mora (id_prestamo, monto_pagado, fecha_pago) VALUES (?, ?, NOW())";
-    PreparedStatement registrarPagoStmt = conn.prepareStatement(registrarPagoQuery);
-    registrarPagoStmt.setInt(1, Integer.parseInt(idPrestamoStr));
-    registrarPagoStmt.setDouble(2, montoMora);
-    registrarPagoStmt.executeUpdate();
+    private void registrarDevolucionYActualizar(Connection conn, String idPrestamoStr, String idDocumento, String estadoDocumento,
+                                            String idUsuario, LocalDate fechaDevolucion, long diasMora, double montoMora) throws SQLException {
+    // Insertar en la tabla `devoluciones`
+    String insertarDevolucionQuery = "INSERT INTO devoluciones (id_prestamo, id_usuario, id_documento, fecha_devolucion_real, dias_mora, monto_mora) VALUES (?, ?, ?, ?, ?, ?)";
+    PreparedStatement insertarDevolucionStmt = conn.prepareStatement(insertarDevolucionQuery);
+    insertarDevolucionStmt.setInt(1, Integer.parseInt(idPrestamoStr));
+    insertarDevolucionStmt.setString(2, idUsuario);
+    insertarDevolucionStmt.setString(3, idDocumento);
+    insertarDevolucionStmt.setDate(4, java.sql.Date.valueOf(fechaDevolucion));
+    insertarDevolucionStmt.setLong(5, diasMora);
+    insertarDevolucionStmt.setDouble(6, montoMora);
+    insertarDevolucionStmt.executeUpdate();
 
-    // Actualizar el estado del préstamo a "Devuelto"
-    String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Devuelto', dias_mora = 0, monto_mora = 0 WHERE id = ?";
+    // Registrar el historial del préstamo
+    String registrarHistorialQuery = "INSERT INTO historial_prestamos (id_prestamo, id_usuario, id_documento, accion, descripcion) VALUES (?, ?, ?, 'Devolución', ?)";
+    PreparedStatement registrarHistorialStmt = conn.prepareStatement(registrarHistorialQuery);
+    registrarHistorialStmt.setInt(1, Integer.parseInt(idPrestamoStr));
+    registrarHistorialStmt.setString(2, idUsuario);
+    registrarHistorialStmt.setString(3, idDocumento);
+    registrarHistorialStmt.setString(4, "Artículo devuelto correctamente.");
+    registrarHistorialStmt.executeUpdate();
+
+    // Actualizar estado del préstamo
+    String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Devuelto', dias_mora = ?, monto_mora = ? WHERE id = ?";
     PreparedStatement actualizarPrestamoStmt = conn.prepareStatement(actualizarPrestamoQuery);
-    actualizarPrestamoStmt.setInt(1, Integer.parseInt(idPrestamoStr));
+    actualizarPrestamoStmt.setLong(1, diasMora);
+    actualizarPrestamoStmt.setDouble(2, montoMora);
+    actualizarPrestamoStmt.setInt(3, Integer.parseInt(idPrestamoStr));
     actualizarPrestamoStmt.executeUpdate();
 
-    JOptionPane.showMessageDialog(this, "La mora de $" + String.format("%.2f", montoMora) + " ha sido pagada.\nEl préstamo se ha registrado como Devuelto.", "Pago exitoso", JOptionPane.INFORMATION_MESSAGE);
+    // Actualizar disponibilidad del documento
+    String actualizarDocumentoQuery = "UPDATE libros SET cantidad_disponible = cantidad_disponible + 1 WHERE id_libros = ?";
+    PreparedStatement actualizarDocumentoStmt = conn.prepareStatement(actualizarDocumentoQuery);
+    actualizarDocumentoStmt.setString(1, idDocumento);
+    actualizarDocumentoStmt.executeUpdate();
 }
 
 
- private double obtenerMoraDiaria(Connection conn) throws SQLException {
-        String query = "SELECT valor FROM configuraciones WHERE clave = 'mora_diaria'";
-        PreparedStatement stmt = conn.prepareStatement(query);
-        ResultSet rs = stmt.executeQuery();
+
+    private double obtenerMoraDiariaPorRol(String idUsuario, Connection conn) throws SQLException {
+        String rolQuery = "SELECT rol FROM usuarios WHERE id = ?";
+        PreparedStatement rolStmt = conn.prepareStatement(rolQuery);
+        rolStmt.setString(1, idUsuario);
+        ResultSet rs = rolStmt.executeQuery();
+
         if (rs.next()) {
-            return rs.getDouble("valor"); // Retornar mora diaria
-        }
-        return 1.50; // Valor por defecto
-    }
+            String rol = rs.getString("rol").toLowerCase();
+            String moraQuery = "SELECT valor FROM configuraciones WHERE clave = ?";
+            PreparedStatement moraStmt = conn.prepareStatement(moraQuery);
+            moraStmt.setString(1, "mora_" + rol);
+            ResultSet moraRs = moraStmt.executeQuery();
 
-    private String determinarTablaEspecificaPorIdDocumento(String idDocumento, Connection conn) throws SQLException {
-        String tablaEspecifica = null;
-        String obtenerTablasQuery = "SELECT nombre FROM tipos_documentos";
-        PreparedStatement obtenerTablasStmt = conn.prepareStatement(obtenerTablasQuery);
-        ResultSet tablasRs = obtenerTablasStmt.executeQuery();
-
-        List<String> tablas = new ArrayList<>();
-        while (tablasRs.next()) {
-            tablas.add(tablasRs.getString("nombre").toLowerCase()); // Añadir nombres de tablas
-        }
-
-        for (String tabla : tablas) {
-            String verificarDocumentoQuery = "SELECT COUNT(*) FROM " + tabla + " WHERE id_libros = ?";
-            PreparedStatement verificarDocumentoStmt = conn.prepareStatement(verificarDocumentoQuery);
-            verificarDocumentoStmt.setString(1, idDocumento);
-            ResultSet verificarRs = verificarDocumentoStmt.executeQuery();
-            if (verificarRs.next() && verificarRs.getInt(1) > 0) {
-                tablaEspecifica = tabla; // Tabla encontrada
-                break;
+            if (moraRs.next()) {
+                return moraRs.getDouble("valor");
             }
         }
 
-        return tablaEspecifica; // Retornar tabla específica
-    }
-
-    private String obtenerNombreUsuario(String idUsuario, Connection conn) throws SQLException {
-        String query = "SELECT nombre FROM usuarios WHERE id = ?";
-        PreparedStatement stmt = conn.prepareStatement(query);
-        stmt.setString(1, idUsuario);
-        ResultSet rs = stmt.executeQuery();
-        if (rs.next()) {
-            return rs.getString("nombre"); // Retornar nombre usuario
-        }
-        return "Desconocido"; // Valor por defecto
-    }
-
-    private void mostrarConfirmacionDevolucion(String idUsuario, String nombreUsuario, String idDocumento, String tituloLibro, String autorLibro, long diasPrestamo, long diasMora, double montoMora, String estadoDocumento) {
-        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Confirmación de Devolución", true); // Crear diálogo
-        dialog.setSize(600, 500);
-        dialog.setLayout(new BorderLayout(10, 10));
-        dialog.setLocationRelativeTo(this); // Posicionar ventana
-
-        JPanel panelInfo = new JPanel(new GridLayout(9, 2, 10, 10)); // Panel de información
-        panelInfo.setBorder(new EmptyBorder(20, 20, 20, 20));
-
-        panelInfo.add(new JLabel("ID del Usuario:")); // Añadir etiqueta
-        panelInfo.add(new JLabel(idUsuario)); // Añadir dato
-
-        panelInfo.add(new JLabel("Nombre del Usuario:")); // Añadir etiqueta
-        panelInfo.add(new JLabel(nombreUsuario)); // Añadir dato
-
-        panelInfo.add(new JLabel("ID del Documento:")); // Añadir etiqueta
-        panelInfo.add(new JLabel(idDocumento)); // Añadir dato
-
-        panelInfo.add(new JLabel("Título del Libro:")); // Añadir etiqueta
-        panelInfo.add(new JLabel(tituloLibro)); // Añadir dato
-
-        panelInfo.add(new JLabel("Autor del Libro:")); // Añadir etiqueta
-        panelInfo.add(new JLabel(autorLibro)); // Añadir dato
-
-        panelInfo.add(new JLabel("Días de Préstamo:")); // Añadir etiqueta
-        panelInfo.add(new JLabel(String.valueOf(diasPrestamo))); // Añadir dato
-
-        panelInfo.add(new JLabel("Días de Mora:")); // Añadir etiqueta
-        panelInfo.add(new JLabel(diasMora > 0 ? String.valueOf(diasMora) : "Sin Mora")); // Añadir dato
-
-        panelInfo.add(new JLabel("Monto de Mora:")); // Añadir etiqueta
-        panelInfo.add(new JLabel(diasMora > 0 ? String.format("$%.2f", montoMora) : "$0.00")); // Añadir dato
-
-        panelInfo.add(new JLabel("Estado del Documento:")); // Añadir etiqueta
-        panelInfo.add(new JLabel(estadoDocumento)); // Añadir dato
-
-        dialog.add(panelInfo, BorderLayout.CENTER); // Añadir información al diálogo
-
-        JPanel panelInferiorDialog = new JPanel(new BorderLayout()); // Panel inferior
-        panelInferiorDialog.setBorder(new EmptyBorder(10, 20, 20, 20));
-
-        JLabel mensaje = new JLabel("Devolución registrada exitosamente.", SwingConstants.CENTER); // Mensaje
-        mensaje.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        mensaje.setForeground(new Color(0, 128, 0)); // Color verde
-
-        JButton cerrarButton = new JButton("Cerrar"); // Botón cerrar
-        cerrarButton.setBackground(new Color(0, 123, 255));
-        cerrarButton.setForeground(Color.WHITE);
-        cerrarButton.setFocusPainted(false);
-        cerrarButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        cerrarButton.addActionListener(e -> dialog.dispose()); // Acción cerrar
-
-        panelInferiorDialog.add(mensaje, BorderLayout.NORTH); // Añadir mensaje
-        panelInferiorDialog.add(cerrarButton, BorderLayout.SOUTH); // Añadir botón
-
-        dialog.add(panelInferiorDialog, BorderLayout.SOUTH); // Añadir panel inferior al diálogo
-        dialog.setVisible(true); // Mostrar diálogo
-    }
-
-    // Métodos auxiliares para crear componentes estilizados
-    private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
-        JButton button = new JButton(text); // Crear botón
-        button.setFont(new Font("Arial", Font.BOLD, 14)); // Fuente
-        button.setBackground(defaultColor); // Color fondo
-        button.setForeground(Color.WHITE); // Color texto
-        button.setFocusPainted(false); // Sin foco
-        button.setPreferredSize(new Dimension(200, 40)); // Tamaño
-        button.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1)); // Borde
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR)); // Cursor mano
-
-        button.addMouseListener(new java.awt.event.MouseAdapter() { // Listener hover
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(hoverColor); // Cambiar color al pasar
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(defaultColor); // Restaurar color
-            }
-        });
-        return button; // Retornar botón
+        return 1.50; // Valor predeterminado si no se encuentra
     }
 
     private JLabel createStyledLabel(String text) {
-        JLabel label = new JLabel(text); // Crear etiqueta
-        label.setFont(new Font("Arial", Font.BOLD, 14)); // Fuente
-        label.setForeground(new Color(70, 130, 180)); // Color texto
-        return label; // Retornar etiqueta
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Arial", Font.BOLD, 14));
+        label.setForeground(new Color(70, 130, 180));
+        return label;
     }
 
     private JTextField createStyledTextField() {
-        JTextField textField = new JTextField(); // Crear campo de texto
-        textField.setFont(new Font("Arial", Font.PLAIN, 14)); // Fuente
-        textField.setBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 1)); // Borde
-        textField.setBackground(Color.WHITE); // Fondo
-        return textField; // Retornar campo
+        JTextField textField = new JTextField();
+        textField.setFont(new Font("Arial", Font.PLAIN, 14));
+        textField.setBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 1));
+        textField.setBackground(Color.WHITE);
+        return textField;
     }
 
     private JComboBox<String> createStyledComboBox(String[] items) {
-        JComboBox<String> comboBox = new JComboBox<>(items); // Crear ComboBox
-        comboBox.setFont(new Font("Arial", Font.PLAIN, 14)); // Fuente
-        comboBox.setBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 1)); // Borde
-        return comboBox; // Retornar ComboBox
+        JComboBox<String> comboBox = new JComboBox<>(items);
+        comboBox.setFont(new Font("Arial", Font.PLAIN, 14));
+        comboBox.setBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 1));
+        return comboBox;
     }
-    
-    private void limpiarFormulario() {
-    idPrestamoField.setText(""); // Limpiar ID Préstamo
-    idDocumentoField.setText(""); // Limpiar ID Documento
-    fechaDevolucionField.setText(""); // Limpiar Fecha de Devolución
-    estadoComboBox.setSelectedIndex(0); // Restablecer el comboBox al primer valor
-    prestamosTable.clearSelection(); // Deseleccionar cualquier fila de la tabla
-}
 
+    private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setBackground(defaultColor);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setPreferredSize(new Dimension(200, 40));
+        button.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(hoverColor);
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(defaultColor);
+            }
+        });
+        return button;
+    }
+
+    private void limpiarFormulario() {
+        idPrestamoField.setText("");
+        idDocumentoField.setText("");
+        fechaDevolucionField.setText("");
+        estadoComboBox.setSelectedIndex(0);
+        prestamosTable.clearSelection();
+    }
 }
