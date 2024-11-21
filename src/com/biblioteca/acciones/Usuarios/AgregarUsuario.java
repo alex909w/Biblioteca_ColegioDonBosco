@@ -9,11 +9,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-import java.util.Date;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
@@ -21,11 +18,11 @@ import org.jdatepicker.impl.JDatePickerImpl;
 import org.jdatepicker.impl.JDatePanelImpl;
 import org.jdatepicker.impl.UtilDateModel;
 
-
 public class AgregarUsuario extends JPanel {
-    private JTextField idField, nombreField, emailField, telefonoField, direccionField, fechaNacimientoField, departamentoField;
+    private JTextField idField, nombreField, emailField, telefonoField, direccionField;
     private JPasswordField passwordField;
     private JComboBox<String> rolComboBox;
+    private JDatePickerImpl fechaNacimientoPicker; // Añadido
 
     public AgregarUsuario() {
         setLayout(new BorderLayout(20, 20));
@@ -53,9 +50,7 @@ public class AgregarUsuario extends JPanel {
         formularioPanel.add(crearCampo("Teléfono:", telefonoField = new JTextField(), false));
         agregarFormatoTelefonoSimple(telefonoField); // Formato para el teléfono
         formularioPanel.add(crearCampo("Dirección:", direccionField = new JTextField(), false));
-
-        formularioPanel.add(crearCampo("Fecha de Nacimiento:", fechaNacimientoField = new JTextField(), false));
-        formularioPanel.add(crearCampo("Departamento:", departamentoField = new JTextField(), false));
+        formularioPanel.add(crearCampoFecha("Fecha de Nacimiento:")); // Modificado
 
         add(formularioPanel, BorderLayout.CENTER);
 
@@ -78,37 +73,29 @@ public class AgregarUsuario extends JPanel {
         actualizarID();
     }
 
-    
     private JPanel crearCampo(String etiqueta, JComponent campo, boolean soloLectura) {
-    // Detecta si la etiqueta contiene la palabra "Fecha" y crea el calendario
-    if (etiqueta.toLowerCase().contains("fecha")) {
-        return crearCampoFecha(etiqueta);
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(new Color(250, 250, 250));
+
+        JLabel label = new JLabel(etiqueta);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        label.setPreferredSize(new Dimension(200, 30));
+        label.setForeground(new Color(50, 50, 50));
+
+        campo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        campo.setPreferredSize(new Dimension(200, 30));
+        campo.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
+
+        if (campo instanceof JTextField) {
+            ((JTextField) campo).setEnabled(!soloLectura);
+        }
+
+        panel.add(label, BorderLayout.WEST);
+        panel.add(campo, BorderLayout.CENTER);
+        panel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+
+        return panel;
     }
-
-    // Si no contiene "Fecha", sigue con el comportamiento normal
-    JPanel panel = new JPanel(new BorderLayout(10, 10));
-    panel.setBackground(new Color(250, 250, 250));
-
-    JLabel label = new JLabel(etiqueta);
-    label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-    label.setPreferredSize(new Dimension(200, 30));
-    label.setForeground(new Color(50, 50, 50));
-
-    campo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-    campo.setPreferredSize(new Dimension(200, 30));
-    campo.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
-
-    if (campo instanceof JTextField) {
-        ((JTextField) campo).setEnabled(!soloLectura);
-    }
-
-    panel.add(label, BorderLayout.WEST);
-    panel.add(campo, BorderLayout.CENTER);
-    panel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
-
-    return panel;
-}
-
 
     private JPanel crearCombo(String etiqueta, JComboBox<String> comboBox) {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
@@ -129,9 +116,8 @@ public class AgregarUsuario extends JPanel {
 
         return panel;
     }
-    
 
-   private JButton crearBoton(String texto, Color colorFondo) {
+    private JButton crearBoton(String texto, Color colorFondo) {
         JButton boton = new JButton(texto);
         boton.setFont(new Font("Segoe UI", Font.BOLD, 14));
         boton.setForeground(Color.WHITE);
@@ -204,7 +190,7 @@ public class AgregarUsuario extends JPanel {
             }
 
             // Insertar usuario
-            String sql = "INSERT INTO usuarios (id, nombre, email, rol, contraseña, telefono, direccion, fecha_nacimiento, departamento) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO usuarios (id, nombre, email, rol, contraseña, telefono, direccion, fecha_nacimiento) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, idField.getText());
             stmt.setString(2, nombreField.getText());
@@ -213,8 +199,10 @@ public class AgregarUsuario extends JPanel {
             stmt.setString(5, new String(passwordField.getPassword()));
             stmt.setString(6, telefonoField.getText());
             stmt.setString(7, direccionField.getText());
-            stmt.setString(8, fechaNacimientoField.getText());
-            stmt.setString(9, departamentoField.getText());
+
+            // Obtener la fecha seleccionada
+            java.sql.Date fechaNacimiento = obtenerFechaSeleccionada(fechaNacimientoPicker);
+            stmt.setDate(8, fechaNacimiento);
 
             stmt.executeUpdate();
             JOptionPane.showMessageDialog(this, "Usuario agregado exitosamente.");
@@ -224,8 +212,8 @@ public class AgregarUsuario extends JPanel {
             JOptionPane.showMessageDialog(this, "Error al agregar usuario: " + ex.getMessage());
         }
     }
-    
-  private void agregarFormatoTelefonoSimple(JTextField campoTelefono) {
+
+    private void agregarFormatoTelefonoSimple(JTextField campoTelefono) {
         campoTelefono.addKeyListener(new java.awt.event.KeyAdapter() {
             @Override
             public void keyReleased(java.awt.event.KeyEvent evt) {
@@ -244,51 +232,45 @@ public class AgregarUsuario extends JPanel {
             }
         });
     }
-    
 
     private boolean validarFormulario() {
-    String nombre = nombreField.getText().trim();
-    String email = emailField.getText().trim();
-    String contraseña = new String(passwordField.getPassword()).trim();
-    String telefono = telefonoField.getText().trim();
-    String fechaNacimiento = fechaNacimientoField.getText().trim();
+        String nombre = nombreField.getText().trim();
+        String email = emailField.getText().trim();
+        String contraseña = new String(passwordField.getPassword()).trim();
+        String telefono = telefonoField.getText().trim();
 
-    if (nombre.isEmpty() || email.isEmpty() || contraseña.isEmpty() || fechaNacimiento.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos obligatorios.");
-        return false;
+        if (nombre.isEmpty() || email.isEmpty() || contraseña.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos obligatorios.");
+            return false;
+        }
+
+        if (!Pattern.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$", nombre)) {
+            JOptionPane.showMessageDialog(this, "El nombre solo debe contener letras, espacios y caracteres especiales como tildes.");
+            return false;
+        }
+
+        if (!Pattern.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$", email)) {
+            JOptionPane.showMessageDialog(this, "Por favor, ingrese un correo electrónico válido.");
+            return false;
+        }
+
+        if (contraseña.length() < 8) {
+            JOptionPane.showMessageDialog(this, "La contraseña debe tener al menos 8 caracteres.");
+            return false;
+        }
+
+        if (!telefono.isEmpty() && !Pattern.matches("^\\d{4}-\\d{4}$", telefono)) {
+            JOptionPane.showMessageDialog(this, "El número de teléfono debe estar en formato 1234-5678.");
+            return false;
+        }
+
+        if (fechaNacimientoPicker.getModel().getValue() == null) {
+            JOptionPane.showMessageDialog(this, "Por favor, seleccione una fecha de nacimiento.");
+            return false;
+        }
+
+        return true;
     }
-
-    // Permitir caracteres especiales en el nombre (letras con tildes, diéresis y ñ)
-    if (!Pattern.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$", nombre)) {
-        JOptionPane.showMessageDialog(this, "El nombre solo debe contener letras, espacios y caracteres especiales como tildes.");
-        return false;
-    }
-
-    // Validar correo electrónico (sigue igual)
-    if (!Pattern.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$", email)) {
-        JOptionPane.showMessageDialog(this, "Por favor, ingrese un correo electrónico válido.");
-        return false;
-    }
-
-    if (contraseña.length() < 8) {
-        JOptionPane.showMessageDialog(this, "La contraseña debe tener al menos 8 caracteres.");
-        return false;
-    }
-
-    if (!telefono.isEmpty() && !Pattern.matches("^\\d{8}$", telefono)) {
-        JOptionPane.showMessageDialog(this, "El número de teléfono debe contener 8 dígitos.");
-        return false;
-    }
-
-    try {
-        LocalDate.parse(fechaNacimiento);
-    } catch (DateTimeParseException ex) {
-        JOptionPane.showMessageDialog(this, "La fecha de nacimiento debe estar en formato YYYY-MM-DD.");
-        return false;
-    }
-
-    return true;
-}
 
     private void limpiarFormulario() {
         nombreField.setText("");
@@ -296,48 +278,43 @@ public class AgregarUsuario extends JPanel {
         passwordField.setText("");
         telefonoField.setText("");
         direccionField.setText("");
-        fechaNacimientoField.setText("");
-        departamentoField.setText("");
         rolComboBox.setSelectedIndex(0);
+        fechaNacimientoPicker.getModel().setValue(null); // Resetea el selector de fecha
         actualizarID();
     }
-    
-  private JPanel crearCampoFecha(String etiqueta) {
-    JPanel panel = new JPanel(new BorderLayout(10, 10));
-    panel.setBackground(new Color(250, 250, 250));
 
-    JLabel label = new JLabel(etiqueta);
-    label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-    label.setPreferredSize(new Dimension(200, 30));
-    label.setForeground(new Color(50, 50, 50));
+    private JPanel crearCampoFecha(String etiqueta) {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(new Color(250, 250, 250));
 
-    // Crear el modelo de fecha
-    UtilDateModel model = new UtilDateModel();
-    model.setSelected(true); // Seleccionar la fecha actual por defecto
+        JLabel label = new JLabel(etiqueta);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        label.setPreferredSize(new Dimension(200, 30));
+        label.setForeground(new Color(50, 50, 50));
 
-    // Propiedades del selector
-    Properties properties = new Properties();
-    properties.put("text.today", "Hoy");
-    properties.put("text.month", "Mes");
-    properties.put("text.year", "Año");
+        UtilDateModel model = new UtilDateModel();
+        // model.setSelected(true); // Puedes descomentar esta línea si deseas que se seleccione la fecha actual por defecto
 
-    // Crear el panel y el picker con el formateador
-    JDatePanelImpl datePanel = new JDatePanelImpl(model, properties);
-    JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateLabelFormatter());
+        Properties properties = new Properties();
+        properties.put("text.today", "Hoy");
+        properties.put("text.month", "Mes");
+        properties.put("text.year", "Año");
 
-    panel.add(label, BorderLayout.WEST);
-    panel.add(datePicker, BorderLayout.CENTER);
-    panel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+        JDatePanelImpl datePanel = new JDatePanelImpl(model, properties);
+        fechaNacimientoPicker = new JDatePickerImpl(datePanel, new DateLabelFormatter());
 
-    return panel;
-}
+        panel.add(label, BorderLayout.WEST);
+        panel.add(fechaNacimientoPicker, BorderLayout.CENTER);
+        panel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+
+        return panel;
+    }
 
     private java.sql.Date obtenerFechaSeleccionada(JDatePickerImpl datePicker) {
-    if (datePicker.getModel().getValue() != null) {
-        java.util.Calendar selectedDate = (java.util.Calendar) datePicker.getModel().getValue();
-        return new java.sql.Date(selectedDate.getTimeInMillis());
+        if (datePicker.getModel().getValue() != null) {
+            java.util.Date selectedDate = (java.util.Date) datePicker.getModel().getValue();
+            return new java.sql.Date(selectedDate.getTime());
+        }
+        return null; // Si no se seleccionó ninguna fecha
     }
-    return null; // Si no se seleccionó ninguna fecha
-}
-
 }

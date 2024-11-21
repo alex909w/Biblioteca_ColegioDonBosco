@@ -1,4 +1,4 @@
-package com.biblioteca.acciones.Devoluciones;
+package com.biblioteca.acciones.Prestamos;
 
 import com.biblioteca.base_datos.ConexionBaseDatos;
 

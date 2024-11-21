@@ -3,7 +3,6 @@ package com.biblioteca.Formularios;
 import com.biblioteca.base_datos.ConexionBaseDatos;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -13,6 +12,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import javax.swing.border.TitledBorder;
 
 public class EditarFormulario extends JPanel {
     private JComboBox<String> tablasComboBox;
@@ -73,7 +73,6 @@ public class EditarFormulario extends JPanel {
 
         gbc.gridx = 2;
         gbc.gridy = 0;
-        gbc.gridwidth = 1;
         gbc.weightx = 0.2;
         configuracionPanel.add(cargarTablaButton = createStyledButton("Cargar Tabla", botonCargarTabla, botonCargarTablaHover), gbc);
 
@@ -157,7 +156,7 @@ public class EditarFormulario extends JPanel {
         usarExistente = false; // Resetear el flag
 
         String nombreTabla = (String) tablasComboBox.getSelectedItem();
-        if (nombreTabla == null || nombreTabla.equals("Seleccione una Tabla")) {
+        if (nombreTabla == null || nombreTabla.equals("Opciones")) {
             JOptionPane.showMessageDialog(this, "Por favor, seleccione una tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -173,7 +172,7 @@ public class EditarFormulario extends JPanel {
 
         try (Connection conn = obtenerConexion();
              Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("DESCRIBE " + nombreTabla)) {
+             ResultSet rs = stmt.executeQuery("DESCRIBE `" + nombreTabla + "`")) {
 
             while (rs.next()) {
                 String campo = rs.getString("Field").trim();
@@ -296,7 +295,7 @@ public class EditarFormulario extends JPanel {
 
     private void actualizarTabla() {
         String nombreTabla = (String) tablasComboBox.getSelectedItem();
-        if (nombreTabla == null || nombreTabla.isEmpty() || nombreTabla.equals("Seleccione una Tabla")) {
+        if (nombreTabla == null || nombreTabla.isEmpty() || nombreTabla.equals("Opciones")) {
             JOptionPane.showMessageDialog(this, "Por favor, seleccione una tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -313,8 +312,8 @@ public class EditarFormulario extends JPanel {
                 String nombreActual = nombreField.getToolTipText();
 
                 if (!nuevoNombre.isEmpty() && !nuevoNombre.equalsIgnoreCase(nombreActual)) {
-                    // Validar el nuevo nombre (permitir espacios)
-                    if (!nuevoNombre.matches("[a-zA-Z0-9_ ]+")) { // Permitir espacios
+                    // Validar el nuevo nombre (permitir caracteres especiales)
+                    if (!nuevoNombre.matches("[\\p{L}\\p{N}_ áéíóúÁÉÍÓÚñÑüÜ!@#$%^&*()+-=/]+")) { // Permitir caracteres especiales
                         JOptionPane.showMessageDialog(this, "El nombre de la columna '" + nuevoNombre + "' contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
                         continue;
                     }
@@ -328,7 +327,15 @@ public class EditarFormulario extends JPanel {
                         continue;
                     }
 
-                    String sql = "ALTER TABLE " + nombreTabla + " CHANGE " + nombreActual + " " + nuevoNombreDB + " VARCHAR(255)";
+                    // Detectar si el nuevo nombre contiene "fecha" para asignar tipo de dato
+                    String tipoDato;
+                    if (nuevoNombre.toLowerCase().contains("fecha")) {
+                        tipoDato = "DATE";
+                    } else {
+                        tipoDato = "VARCHAR(255)";
+                    }
+
+                    String sql = "ALTER TABLE `" + nombreTabla + "` CHANGE `" + nombreActual + "` `" + nuevoNombreDB + "` " + tipoDato;
                     stmt.executeUpdate(sql);
                 }
             }
@@ -338,8 +345,8 @@ public class EditarFormulario extends JPanel {
                 String nuevoNombre = nuevaColumnaField.getText().trim();
 
                 if (!nuevoNombre.isEmpty()) {
-                    // Validar el nuevo nombre (permitir espacios)
-                    if (!nuevoNombre.matches("[a-zA-Z0-9_ ]+")) { // Permitir espacios
+                    // Validar el nuevo nombre (permitir caracteres especiales)
+                    if (!nuevoNombre.matches("[\\p{L}\\p{N}_ áéíóúÁÉÍÓÚñÑüÜ!@#$%^&*()+-=/]+")) { // Permitir caracteres especiales
                         JOptionPane.showMessageDialog(this, "El nombre de la nueva columna '" + nuevoNombre + "' contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
                         continue;
                     }
@@ -353,7 +360,20 @@ public class EditarFormulario extends JPanel {
                         continue;
                     }
 
-                    String sql = "ALTER TABLE " + nombreTabla + " ADD " + nuevoNombreDB + " VARCHAR(255)";
+                    // Detectar si el nuevo nombre contiene "fecha" para asignar tipo de dato
+                    String tipoDato;
+                    if (nuevoNombre.toLowerCase().contains("fecha")) {
+                        tipoDato = "DATE";
+                    } else {
+                        tipoDato = "VARCHAR(255)";
+                    }
+
+                    String sql;
+                    if (tipoDato.equals("DATE")) {
+                        sql = "ALTER TABLE `" + nombreTabla + "` ADD `" + nuevoNombreDB + "` DATE";
+                    } else {
+                        sql = "ALTER TABLE `" + nombreTabla + "` ADD `" + nuevoNombreDB + "` VARCHAR(255)";
+                    }
                     stmt.executeUpdate(sql);
                 }
             }
@@ -379,7 +399,7 @@ public class EditarFormulario extends JPanel {
         tablasComboBox.setSelectedIndex(0);
 
         // Mostrar mensaje al usuario
-        JOptionPane.showMessageDialog(this, "Actualización Cacelada.", "Información", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, "Actualización Cancelada.", "Información", JOptionPane.INFORMATION_MESSAGE);
     }
 
     // Método para sanitizar nombres: reemplazar espacios con guiones bajos

@@ -4,7 +4,6 @@ import com.biblioteca.base_datos.ConexionBaseDatos;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +14,7 @@ public class CrearFormulario extends JPanel {
     private JTextField numeroColumnasField;
     private JPanel columnasPanel;
     private JButton generarColumnasButton, crearTablaButton;
-    private boolean usarExistente = false;
 
-    // Definición de colores para los botones
     private final Color botonCrearTabla = new Color(255, 69, 0); // Orange Red
     private final Color botonCrearTablaHover = new Color(178, 34, 34); // Firebrick
     private final Color botonGenerarCampos = new Color(34, 139, 34); // Forest Green
@@ -115,7 +112,6 @@ public class CrearFormulario extends JPanel {
         }
 
         try (Connection conn = ConexionBaseDatos.getConexion()) {
-            // Verificar si el formulario ya existe en tipos_documentos
             String verificarRegistroSQL = "SELECT COUNT(*) AS total FROM tipos_documentos WHERE nombre = ?";
             try (PreparedStatement psVerificar = conn.prepareStatement(verificarRegistroSQL)) {
                 psVerificar.setString(1, nombreTabla);
@@ -166,49 +162,28 @@ public class CrearFormulario extends JPanel {
     }
 
     private void crearTabla() {
-        if (usarExistente) {
-            JOptionPane.showMessageDialog(this, "Se está utilizando la tabla existente. No es necesario crear una nueva.");
-            return;
-        }
-
         String nombreTabla = nombreTablaField.getText().trim();
         if (nombreTabla.isEmpty()) {
             JOptionPane.showMessageDialog(this, "El nombre del formulario no puede estar vacío.");
             return;
         }
 
-        // Validar formato del nombre de la tabla (solo letras, números y guiones bajos permitidos)
-        if (!nombreTabla.matches("[a-zA-Z0-9_ ]+")) { // Permitir espacios para el usuario
-            JOptionPane.showMessageDialog(this, "El nombre del formulario debe contener solo letras, números, espacios o guiones bajos.", 
-                                          "Error en el nombre", JOptionPane.ERROR_MESSAGE);
+        if (!nombreTabla.matches("[a-zA-Z0-9_ ]+")) {
+            JOptionPane.showMessageDialog(this, "El nombre del formulario debe contener solo letras, números, espacios o guiones bajos.",
+                    "Error en el nombre", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Sanitizar el nombre de la tabla para la base de datos (reemplazar espacios con guiones bajos)
         String nombreTablaDB = sanitizeName(nombreTabla);
 
         try (Connection conn = ConexionBaseDatos.getConexion()) {
             conn.setAutoCommit(false);
 
-            // Verificar si el nombre ya está registrado en `tipos_documentos`
-            String verificarRegistroSQL = "SELECT COUNT(*) FROM tipos_documentos WHERE nombre = ?";
-            try (PreparedStatement psVerificar = conn.prepareStatement(verificarRegistroSQL)) {
-                psVerificar.setString(1, nombreTabla);
-                ResultSet rs = psVerificar.executeQuery();
-                if (rs.next() && rs.getInt(1) > 0) {
-                    JOptionPane.showMessageDialog(this, "El formulario ya está registrado en 'tipos_documentos'.");
-                    return;
-                }
-            }
+            StringBuilder sql = new StringBuilder("CREATE TABLE `").append(nombreTablaDB).append("` (");
 
-            // Crear la definición de la tabla
-            StringBuilder sql = new StringBuilder("CREATE TABLE ").append(nombreTablaDB).append(" (");
-
-            // Agregar la columna ID con formato `id_nombreDeLaTablaDB`
             String idColumna = "id_" + nombreTablaDB.toLowerCase();
-            sql.append(idColumna).append(" VARCHAR(15) PRIMARY KEY, "); // Ajustar el tamaño si es necesario
+            sql.append("`").append(idColumna).append("` VARCHAR(15) PRIMARY KEY, ");
 
-            // Procesar los nombres de las columnas dinámicas
             for (JTextField campo : camposDinamicos) {
                 String nombreColumna = campo.getText().trim();
                 if (nombreColumna.isEmpty()) {
@@ -216,35 +191,32 @@ public class CrearFormulario extends JPanel {
                     conn.rollback();
                     return;
                 }
-                // Validar el formato del nombre de la columna
-                if (!nombreColumna.matches("[a-zA-Z0-9_ ]+")) { // Permitir espacios para el usuario
+                if (!nombreColumna.matches("[\\p{L}\\p{N}_ áéíóúÁÉÍÓÚñÑüÜ!@#$%^&*()+-=/]+")) { // Permitir caracteres especiales
                     JOptionPane.showMessageDialog(this, "El nombre de la columna '" + nombreColumna + "' contiene caracteres inválidos.");
                     conn.rollback();
                     return;
                 }
-                // Sanitizar el nombre de la columna para la base de datos
                 String nombreColumnaDB = sanitizeName(nombreColumna);
-                sql.append(nombreColumnaDB).append(" VARCHAR(255), ");
+
+                // Detectar si el nombre de la columna contiene "fecha" (insensible a mayúsculas)
+                if (nombreColumna.toLowerCase().contains("fecha")) {
+                    sql.append("`").append(nombreColumnaDB).append("` DATE, ");
+                } else {
+                    sql.append("`").append(nombreColumnaDB).append("` VARCHAR(255), ");
+                }
             }
 
-            // Agregar columnas predeterminadas
-sql.append("`ubicacion_fisica` VARCHAR(255), ");
-sql.append("`cantidad_disponible` INT DEFAULT 0, ");
-sql.append("`estado` ENUM('Bueno', 'Dañado', 'En Reparación') DEFAULT 'Bueno', ");
-sql.append("`palabras_clave` TEXT, ");
-
-// Eliminar la última coma antes de cerrar el paréntesis
-sql.setLength(sql.length() - 2); // Elimina la última coma y espacio
-
-// Cerrar el paréntesis
-sql.append(");");
-
+            // Añadir columnas predeterminadas
+            sql.append("`ubicacion_fisica` VARCHAR(255), ");
+            sql.append("`cantidad_disponible` INT DEFAULT 0, ");
+            sql.append("`cantidad_total` INT DEFAULT 0, ");
+            sql.append("`estado` ENUM('Bueno', 'Dañado', 'En Reparación') DEFAULT 'Bueno', ");
+            sql.append("`palabras_clave` TEXT);");
 
             try (Statement stmt = conn.createStatement()) {
                 stmt.executeUpdate(sql.toString());
             }
 
-            // Registrar el nuevo tipo de documento en la tabla `tipos_documentos`
             String registrarTipoSQL = "INSERT INTO tipos_documentos (nombre, fecha_creacion) VALUES (?, NOW())";
             try (PreparedStatement psRegistrar = conn.prepareStatement(registrarTipoSQL)) {
                 psRegistrar.setString(1, nombreTabla);
@@ -254,7 +226,7 @@ sql.append(");");
             conn.commit();
             JOptionPane.showMessageDialog(this, "Tabla registrada de forma exitosa.");
 
-            // Limpiar campos
+            // Limpiar campos después de la creación
             nombreTablaField.setText("");
             numeroColumnasField.setText("");
             columnasPanel.removeAll();
@@ -267,7 +239,6 @@ sql.append(");");
         }
     }
 
-    // Método para sanitizar nombres: reemplazar espacios con guiones bajos
     private String sanitizeName(String name) {
         return name.trim().replaceAll(" +", "_");
     }

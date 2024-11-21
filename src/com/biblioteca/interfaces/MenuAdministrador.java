@@ -6,11 +6,11 @@ import com.biblioteca.Inventario.RegistrarArticulo;
 import com.biblioteca.Formularios.CrearFormulario;
 import com.biblioteca.Formularios.EditarFormulario;
 import com.biblioteca.Formularios.EliminarFormulario;
-import com.biblioteca.acciones.Devoluciones.RegistrarDevolucion;
+import com.biblioteca.acciones.Prestamos.RegistrarDevolucion;
 import com.biblioteca.acciones.Mora.VerMoraPendiente;
 import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
-import com.biblioteca.acciones.Prestamos.RegistrarPrestamo;
+import com.biblioteca.acciones.Prestamos.GestionPrestamos;
 import com.biblioteca.acciones.Usuarios.EditarUsuario;
 import com.biblioteca.acciones.Usuarios.EliminarUsuario;
 import com.biblioteca.acciones.Usuarios.AgregarUsuario;
@@ -297,7 +297,7 @@ public class MenuAdministrador extends JFrame {
 
             // Gestión de Ejemplares
             case "Registrar Préstamos":
-                nuevoPanel = new RegistrarPrestamo();
+                nuevoPanel = new GestionPrestamos();
                 break;
             case "Historial de Préstamos":
                 String correoUsuario = obtenerCorreoUsuarioAutenticado();

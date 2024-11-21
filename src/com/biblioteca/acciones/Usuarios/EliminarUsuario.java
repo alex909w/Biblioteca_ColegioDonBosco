@@ -8,13 +8,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import javax.swing.border.TitledBorder;
 
 public class EliminarUsuario extends JPanel {
     private JComboBox<String> idUsuarioComboBox;
-    private JTextField nombreField, emailField, telefonoField, direccionField, fechaNacimientoField, departamentoField, fechaRegistroField;
+    private JTextField nombreField, emailField, telefonoField, direccionField, fechaNacimientoField, fechaRegistroField;
     private JButton eliminarButton;
-    
+
     private final Color FONDO_LATERAL = new Color(248, 249, 250);
     private final Font FUENTE_PRINCIPAL = new Font("Segoe UI", Font.PLAIN, 14);
     private final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 24);
@@ -45,7 +44,7 @@ public class EliminarUsuario extends JPanel {
         formularioPanel.add(crearCampo("Teléfono:", telefonoField = new JTextField(), false));
         formularioPanel.add(crearCampo("Dirección:", direccionField = new JTextField(), false));
         formularioPanel.add(crearCampo("Fecha de Nacimiento (YYYY-MM-DD):", fechaNacimientoField = new JTextField(), false));
-        formularioPanel.add(crearCampo("Departamento:", departamentoField = new JTextField(), false));
+        formularioPanel.add(crearCampo("Fecha de Registro:", fechaRegistroField = new JTextField(), false));
 
         add(formularioPanel, BorderLayout.CENTER);
 
@@ -59,20 +58,19 @@ public class EliminarUsuario extends JPanel {
 
         add(buttonPanel, BorderLayout.SOUTH);
     }
-  
-    private JComboBox<String> crearCombobox(String... items){
+
+    private JComboBox<String> crearCombobox(String... items) {
         JComboBox<String> comboBox = new JComboBox<>(items);
         comboBox.setFont(FUENTE_PRINCIPAL);
         return comboBox;
-        
     }
-    
-        private JLabel createLabel(String text) {
+
+    private JLabel createLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(FUENTE_TITULO);
         return label;
     }
-    
+
     private JPanel crearCampo(String etiqueta, JComponent campo, boolean soloLectura) {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
         panel.setBackground(new Color(250, 250, 250));
@@ -118,7 +116,7 @@ public class EliminarUsuario extends JPanel {
         });
 
         return boton;
-    }    
+    }
 
     private void cargarUsuariosEnComboBox() {
         try (Connection conn = ConexionBaseDatos.getConexion();
@@ -151,7 +149,6 @@ public class EliminarUsuario extends JPanel {
                 telefonoField.setText(rs.getString("telefono"));
                 direccionField.setText(rs.getString("direccion"));
                 fechaNacimientoField.setText(rs.getString("fecha_nacimiento"));
-                departamentoField.setText(rs.getString("departamento"));
                 fechaRegistroField.setText(rs.getString("fecha_registro"));
             } else {
                 JOptionPane.showMessageDialog(this, "Usuario no encontrado.");
@@ -201,16 +198,6 @@ public class EliminarUsuario extends JPanel {
         telefonoField.setText("");
         direccionField.setText("");
         fechaNacimientoField.setText("");
-        departamentoField.setText("");
         fechaRegistroField.setText("");
-
-    }
-
-    private JTextField createReadOnlyTextField() {
-        JTextField textField = new JTextField();
-        textField.setFont(new Font("Arial", Font.PLAIN, 14));
-        textField.setForeground(Color.BLACK);
-        textField.setEditable(false);
-        return textField;
     }
 }

@@ -3,7 +3,7 @@ package com.biblioteca.interfaces;
 import com.biblioteca.acciones.Mora.VerMoraPendiente;
 import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
-import com.biblioteca.acciones.Prestamos.RegistrarPrestamo;
+import com.biblioteca.acciones.Prestamos.GestionPrestamos;
 
 import javax.swing.*;
 import java.awt.*;
@@ -193,7 +193,7 @@ public class MenuAlumno extends JFrame {
                 nuevoPanel = new BuscarPorTituloAutorEstado();
                 break;
             case "Solicitar Préstamo":
-                nuevoPanel = new RegistrarPrestamo();
+                nuevoPanel = new GestionPrestamos();
                 break;
             case "Ver Historial de Préstamos":
                 String correoUsuario = obtenerCorreoUsuarioAutenticado();
