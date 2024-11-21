@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MenuProfesor extends JFrame {
+    private String emailUsuario; 
     private JPanel panelCentral;
     private JPanel panelIzquierdo;
     private Map<String, JPanel> submenusVisibles;
@@ -23,7 +24,8 @@ public class MenuProfesor extends JFrame {
     private final Font FUENTE_PRINCIPAL = new Font("Segoe UI", Font.PLAIN, 14);
     private final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 24);
 
-    public MenuProfesor() {
+    public MenuProfesor(String email) {
+          this.emailUsuario = email;
         setTitle("Menú Principal - Rol: Profesor");
         setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -187,17 +189,16 @@ public class MenuProfesor extends JFrame {
 
         switch (submenu) {
             case "Buscar por Título, Autor o Estado":
-                nuevoPanel = new BuscarPorTituloAutorEstado();
+                nuevoPanel = new BuscarPorTituloAutorEstado(); // Pasar el email si es necesario
                 break;
             case "Registrar Préstamos":
-                nuevoPanel = new GestionPrestamos();
+                nuevoPanel = new GestionPrestamos(emailUsuario); // Pasar el email
                 break;
             case "Ver Historial de Préstamos":
-                String correoUsuario = obtenerCorreoUsuarioAutenticado();
-                nuevoPanel = new HistorialPrestamos(correoUsuario);
+                nuevoPanel = new HistorialPrestamos(emailUsuario); // Pasar el email
                 break;
             case "Registrar Devolución":
-                nuevoPanel = new RegistrarDevolucion();
+                nuevoPanel = new RegistrarDevolucion(emailUsuario); // Pasar el email
                 break;
             default:
                 nuevoPanel = new JPanel();
@@ -213,10 +214,10 @@ public class MenuProfesor extends JFrame {
     }
 
     private String obtenerCorreoUsuarioAutenticado() {
-        return "profesor@colegio.com"; // Simulación del correo del usuario autenticado
+        return this.emailUsuario;
     }
-
-    public static void main(String[] args) {
-        new MenuProfesor();
+ public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new MenuProfesor("profesor@colegio.com")); // Correo de prueba
     }
+ 
 }

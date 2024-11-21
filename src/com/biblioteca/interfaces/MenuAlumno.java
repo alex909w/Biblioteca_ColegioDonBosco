@@ -3,6 +3,8 @@ package com.biblioteca.interfaces;
 import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
 import com.biblioteca.acciones.Prestamos.ConsultarPrestamos;
+import com.biblioteca.acciones.Prestamos.GestionPrestamos;
+import com.biblioteca.acciones.Prestamos.RegistrarDevolucion;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MenuAlumno extends JFrame {
+    private String emailUsuario;
     private JPanel panelCentral;
     private JPanel panelIzquierdo;
     private Map<String, JPanel> submenusVisibles;
@@ -21,7 +24,8 @@ public class MenuAlumno extends JFrame {
     private final Font FUENTE_PRINCIPAL = new Font("Segoe UI", Font.PLAIN, 14);
     private final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 24);
 
-    public MenuAlumno() {
+    public MenuAlumno(String email) {
+        this.emailUsuario = email;
         setTitle("Menú Principal - Rol: Alumno");
         setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -65,14 +69,8 @@ public class MenuAlumno extends JFrame {
     }
 
     private void configurarMenu() {
-        agregarBotonMenu("Consultar Ejemplares", new String[]{
-            "Buscar por Título, Autor o Estado"
-        });
         agregarBotonMenu("Gestión de Préstamos", new String[]{
-            "Solicitar Préstamo", "Ver Historial de Préstamos"
-        });
-        agregarBotonMenu("Gestión de Devoluciones", new String[]{
-            "Ver Mora Pendiente", "Ver Estado de Devoluciones"
+            "Buscar por Título, Autor o Estado","Solicitar Préstamo", "Ver Historial de Préstamos","Ver Estado de Devoluciones"
         });
     }
 
@@ -137,9 +135,7 @@ public class MenuAlumno extends JFrame {
 
         panelIzquierdo.add(botonMenu);
         panelIzquierdo.add(subMenuPanel);
-
         submenusVisibles.put(titulo, subMenuPanel);
-
         panelIzquierdo.add(Box.createVerticalStrut(10));
     }
 
@@ -155,12 +151,14 @@ public class MenuAlumno extends JFrame {
         botonSalir.setAlignmentX(Component.LEFT_ALIGNMENT);
         botonSalir.setBackground(new Color(193, 42, 46));
         botonSalir.setForeground(Color.WHITE);
-        botonSalir.setPreferredSize(new Dimension(100, 40));
-        botonSalir.setMaximumSize(new Dimension(100, 40));
+        botonSalir.setPreferredSize(new Dimension(250, 40));
+        botonSalir.setMaximumSize(new Dimension(250, 40));
         botonSalir.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.GRAY, 1),
-                BorderFactory.createEmptyBorder(10, 10, 10, 10)
+            BorderFactory.createLineBorder(Color.GRAY, 1),
+            BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
+        botonSalir.setFocusPainted(false);
+
         botonSalir.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -175,7 +173,7 @@ public class MenuAlumno extends JFrame {
 
         botonSalir.addActionListener(e -> {
             dispose();
-            new LoginBiblioteca();
+            new LoginBiblioteca(); // Asegúrate de que LoginBiblioteca tenga un constructor sin parámetros
         });
 
         panelIzquierdo.add(Box.createVerticalGlue());
@@ -190,17 +188,19 @@ public class MenuAlumno extends JFrame {
 
         switch (submenu) {
             case "Buscar por Título, Autor o Estado":
-                nuevoPanel = new BuscarPorTituloAutorEstado();
+                nuevoPanel = new BuscarPorTituloAutorEstado(); // Pasar el email
                 break;
-            case "Mis prestamos":
-                nuevoPanel = new ConsultarPrestamos(correoUsuario);
+            case "Solicitar Préstamo":
+                nuevoPanel = new GestionPrestamos(correoUsuario); // Implementa esta clase y pasa el email
                 break;
             case "Ver Historial de Préstamos":
-                nuevoPanel = new HistorialPrestamos(correoUsuario);
+                nuevoPanel = new HistorialPrestamos(correoUsuario); // Pasar el email
                 break;
             case "Ver Estado de Devoluciones":
-                nuevoPanel = new JPanel();
-                nuevoPanel.add(new JLabel("Función pendiente: Ver Estado de Devoluciones"));
+                nuevoPanel = new RegistrarDevolucion(correoUsuario); // Implementa esta clase y pasa el email
+                break;
+            case "Consultas":
+                nuevoPanel = new ConsultarPrestamos(correoUsuario); // Implementa esta clase y pasa el email
                 break;
             default:
                 nuevoPanel = new JPanel();
@@ -216,14 +216,8 @@ public class MenuAlumno extends JFrame {
     }
 
     private String obtenerCorreoUsuarioAutenticado() {
-        return "alumno@colegio.com"; // Simulación de correo autenticado
-    }
-    
-    private String obtenerIDUsuario() {
-        return "AL00001"; // Simulación de correo autenticado
+        return this.emailUsuario;
     }
 
-    public static void main(String[] args) {
-        new MenuAlumno();
-    }
+   
 }

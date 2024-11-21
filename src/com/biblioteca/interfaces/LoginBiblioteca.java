@@ -145,7 +145,7 @@ public class LoginBiblioteca extends JFrame {
 
                 // Redirigir según el rol
                 dispose(); // Cerrar la ventana de login
-                abrirMenuPorRol(rol);
+                abrirMenuPorRol(rol, email);
             } else {
                 JOptionPane.showMessageDialog(this, "Credenciales incorrectas. Inténtelo de nuevo.");
             }
@@ -154,21 +154,26 @@ public class LoginBiblioteca extends JFrame {
         }
     }
 
-    private void abrirMenuPorRol(String rol) {
-        switch (rol.toLowerCase()) {
-            case "administrador":
-                new MenuAdministrador();
-                break;
-            case "profesor":
-                new MenuProfesor();
-                break;
-            case "alumno":
-                new MenuAlumno();
-                break;
-            default:
-                JOptionPane.showMessageDialog(this, "Rol desconocido. No se puede acceder al sistema.");
-        }
+    // En LoginBiblioteca.java
+
+private void abrirMenuPorRol(String rol, String email) {
+    switch (rol.toLowerCase()) {
+        case "administrador":
+            new MenuAdministrador(email);
+            break;
+        case "profesor":
+            new MenuProfesor(email);
+            break;
+        case "alumno":
+            new MenuAlumno(email);
+            break;
+        default:
+            JOptionPane.showMessageDialog(this, "Rol desconocido. No se puede acceder al sistema.");
     }
+}
+
+
+
 
     public static void main(String[] args) {
         new LoginBiblioteca();

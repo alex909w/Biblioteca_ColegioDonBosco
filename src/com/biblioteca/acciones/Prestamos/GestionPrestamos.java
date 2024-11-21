@@ -11,17 +11,39 @@ import java.sql.*;
 
 public class GestionPrestamos extends JPanel {
 
+    private String emailUsuario; // Almacenar el correo del usuario autenticado
     private JTable tablaLibros;
     private JComboBox<String> tiposDocumentosComboBox;
     private JComboBox<Integer> diasPrestamoComboBox;
     private JButton buscarButton;
     private JButton registrarButton;
+    private JLabel infoLabel; // Etiqueta para mostrar el correo del usuario
+    private JLabel rolLabel;  // Etiqueta para mostrar el rol del usuario
 
-    public GestionPrestamos() {
+    public GestionPrestamos(String emailUsuario) {
+        this.emailUsuario = emailUsuario; // Asignar el correo recibido
         setLayout(new BorderLayout(15, 15)); // Margen entre componentes
 
         // Estilo general
         setBackground(new Color(240, 240, 240)); // Fondo claro
+
+        // Contenedor para las etiquetas de información y el panel superior
+        JPanel panelNorth = new JPanel();
+        panelNorth.setLayout(new BoxLayout(panelNorth, BoxLayout.Y_AXIS));
+        panelNorth.setBackground(new Color(240, 240, 240));
+
+        // Obtener información del usuario autenticado
+        String rolUsuario = obtenerRolUsuarioAutenticado();
+
+        // Etiqueta superior: Información del Usuario
+        infoLabel = createStyledLabel("Préstamos gestionados por: " + emailUsuario);
+        infoLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelNorth.add(infoLabel);
+
+        // Etiqueta inferior: Rol del Usuario
+        rolLabel = createStyledLabel("Rol del usuario: " + rolUsuario);
+        rolLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panelNorth.add(rolLabel);
 
         // Panel Superior: Búsqueda de Tipo de Documento
         JPanel panelSuperior = new JPanel(new GridLayout(1, 1, 10, 10)); // Grid para alineación
@@ -38,11 +60,19 @@ public class GestionPrestamos extends JPanel {
         fila1.add(buscarButton);
 
         panelSuperior.add(fila1);
-        add(panelSuperior, BorderLayout.NORTH);
+        panelNorth.add(panelSuperior);
+
+        add(panelNorth, BorderLayout.NORTH);
 
         // Panel Central: Tabla de Documentos Disponibles
         String[] columnas = {"ID", "Título", "Autor", "Cantidad Disponible"};
-        DefaultTableModel modeloTabla = new DefaultTableModel(columnas, 0);
+        DefaultTableModel modeloTabla = new DefaultTableModel(columnas, 0) {
+            // Hacer que las celdas no sean editables
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         tablaLibros = new JTable(modeloTabla);
 
         tablaLibros.setFillsViewportHeight(true); // Rellenar todo el área visible
@@ -94,13 +124,27 @@ public class GestionPrestamos extends JPanel {
     }
 
     /**
-     * Método para obtener el correo del usuario autenticado.
-     * Aquí se puede integrar con el sistema de autenticación real.
+     * Método para obtener el rol del usuario autenticado basado en su correo.
      *
-     * @return Correo del usuario autenticado.
+     * @return Rol del usuario.
      */
-    private String obtenerCorreoUsuarioAutenticado() {
-        return "admin@colegio.com"; // Ejemplo estático
+    private String obtenerRolUsuarioAutenticado() {
+        String rol = "Desconocido"; // Valor por defecto
+        try (Connection conexion = ConexionBaseDatos.getConexion()) {
+            String rolQuery = "SELECT rol FROM usuarios WHERE email = ?";
+            PreparedStatement rolStmt = conexion.prepareStatement(rolQuery);
+            rolStmt.setString(1, emailUsuario);
+            ResultSet rs = rolStmt.executeQuery();
+
+            if (rs.next()) {
+                rol = rs.getString("rol");
+            } else {
+                JOptionPane.showMessageDialog(this, "No se encontró el rol del usuario.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al obtener el rol del usuario: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return rol;
     }
 
     /**
@@ -122,7 +166,9 @@ public class GestionPrestamos extends JPanel {
         }
     }
 
-
+    /**
+     * Busca y muestra los libros disponibles según el tipo de documento seleccionado.
+     */
     private void buscarLibros() {
         String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
 
@@ -133,17 +179,10 @@ public class GestionPrestamos extends JPanel {
         }
 
         try (Connection conexion = ConexionBaseDatos.getConexion()) {
-            // Obtener el correo del usuario autenticado
-            String correo = obtenerCorreoUsuarioAutenticado();
-            if (correo == null || correo.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No se pudo obtener la información del usuario de la sesión.");
-                return;
-            }
-
             // Verificar que el correo exista en la tabla de usuarios
             String usuarioQuery = "SELECT id FROM usuarios WHERE email = ?";
             PreparedStatement usuarioStmt = conexion.prepareStatement(usuarioQuery);
-            usuarioStmt.setString(1, correo);
+            usuarioStmt.setString(1, emailUsuario);
             ResultSet usuarioRs = usuarioStmt.executeQuery();
 
             if (!usuarioRs.next()) {
@@ -200,7 +239,10 @@ public class GestionPrestamos extends JPanel {
         return -1; // Retorna -1 si la columna no se encuentra
     }
 
-
+    /**
+     * Registra un préstamo para el documento seleccionado.
+     * Utiliza la información del usuario que ha iniciado sesión.
+     */
     private void registrarPrestamo() {
         int filaSeleccionada = tablaLibros.getSelectedRow();
         if (filaSeleccionada == -1) {
@@ -214,16 +256,19 @@ public class GestionPrestamos extends JPanel {
             return;
         }
 
-        // Obtener el índice de la columna "cantidad_disponible"
-        int cantidadDisponibleIndex = getColumnIndex("cantidad_disponible");
+        // Obtener el índice de la columna "Cantidad Disponible" o "cantidad_disponible"
+        int cantidadDisponibleIndex = getColumnIndex("Cantidad Disponible");
         if (cantidadDisponibleIndex == -1) {
-            JOptionPane.showMessageDialog(this, "La columna 'cantidad_disponible' no se encontró en la tabla.");
-            return;
+            cantidadDisponibleIndex = getColumnIndex("cantidad_disponible"); // Intentar con minúsculas
+            if (cantidadDisponibleIndex == -1) {
+                JOptionPane.showMessageDialog(this, "La columna 'Cantidad Disponible' no se encontró en la tabla.");
+                return;
+            }
         }
 
         try {
             // Obtener el correo del usuario autenticado
-            String correo = obtenerCorreoUsuarioAutenticado();
+            String correo = emailUsuario;
             if (correo == null || correo.trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "No se pudo obtener la información del usuario de la sesión.");
                 return;
@@ -242,7 +287,7 @@ public class GestionPrestamos extends JPanel {
             int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
 
             try (Connection conexion = ConexionBaseDatos.getConexion()) {
-                // Validar correo del usuario
+                // Validar correo del usuario y obtener su ID y rol
                 String usuarioQuery = "SELECT id, rol FROM usuarios WHERE email = ?";
                 PreparedStatement usuarioStmt = conexion.prepareStatement(usuarioQuery);
                 usuarioStmt.setString(1, correo);
@@ -264,7 +309,7 @@ public class GestionPrestamos extends JPanel {
 
                 // Insertar el préstamo en la tabla `prestamos`
                 String prestamoQuery = "INSERT INTO prestamos (id_usuario, id_documento, dias_prestamo, fecha_prestamo, fecha_devolucion, estado) " +
-                                       "VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Pendiente')";
+                        "VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Pendiente')";
                 PreparedStatement prestamoStmt = conexion.prepareStatement(prestamoQuery);
                 prestamoStmt.setString(1, idUsuario);
                 prestamoStmt.setString(2, idDocumento);
@@ -361,7 +406,19 @@ public class GestionPrestamos extends JPanel {
                 return moraRs.getDouble("valor"); // Retornar la mora configurada
             }
         }
-        return 1.50; 
+        return 1.50; // Valor por defecto si no se encuentra
     }
 
+    /**
+     * Método auxiliar para crear una etiqueta estilizada.
+     *
+     * @param text Texto de la etiqueta.
+     * @return JLabel estilizada.
+     */
+    private JLabel createStyledLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Arial", Font.BOLD, 14));
+        label.setForeground(new Color(70, 130, 180)); // Steel Blue
+        return label;
+    }
 }

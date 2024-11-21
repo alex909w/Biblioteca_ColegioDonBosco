@@ -24,6 +24,7 @@ import java.util.Map;
 import org.jdatepicker.impl.JDatePickerImpl;
 
 public class MenuAdministrador extends JFrame {
+    private String emailUsuario;
     private JPanel panelCentral;
     private JPanel panelIzquierdo;
     private Map<String, JPanel> submenusVisibles;
@@ -33,7 +34,8 @@ public class MenuAdministrador extends JFrame {
     private final Color COLOR_HOVER = new Color(233, 236, 239);
     private final Font FUENTE_PRINCIPAL = new Font("Segoe UI", Font.PLAIN, 14);
 
-    public MenuAdministrador() {
+    public MenuAdministrador(String email) {
+         this.emailUsuario = email;
         setTitle("Menú Principal: Administrador");
         setSize(1200, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -277,7 +279,7 @@ public class MenuAdministrador extends JFrame {
 
             // Gestión de Ejemplares
             case "Registrar Préstamos":
-                nuevoPanel = new GestionPrestamos();
+                nuevoPanel = new GestionPrestamos(emailUsuario);
                 break;
             case "Historial de Préstamos":
                 String correoUsuario = obtenerCorreoUsuarioAutenticado();
@@ -286,7 +288,7 @@ public class MenuAdministrador extends JFrame {
 
             // Gestión de Devoluciones
             case "Registrar Devolución":
-                nuevoPanel = new RegistrarDevolucion();
+                nuevoPanel = new RegistrarDevolucion(emailUsuario); // Pasar el email
                 break;
 
             // Configuraciones
@@ -327,10 +329,11 @@ public class MenuAdministrador extends JFrame {
 
 
     private String obtenerCorreoUsuarioAutenticado() {
-        return "admin@colegio.com";
+        return this.emailUsuario;
+    }
+    
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new MenuAdministrador("admin@colegio.com")); // Correo de prueba
     }
 
-    public static void main(String[] args) {
-        new MenuAdministrador();
-    }
-}
+  }
