@@ -10,6 +10,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -205,77 +206,78 @@ public class RegistrarDevolucion extends JPanel {
         }
     }
 
-    /**
-     * Registra la devolución de un préstamo seleccionado.
-     */
-    private void registrarDevolucion() {
-        String idPrestamoStr = idPrestamoField.getText().trim();
-        String idDocumento = idDocumentoField.getText().trim();
-        String estadoDocumento = (String) estadoComboBox.getSelectedItem();
-        String fechaDevolucionStr = fechaDevolucionField.getText().trim();
+    // Registra la devolución de un préstamo seleccionado.
+private void registrarDevolucion() {
+    String idPrestamoStr = idPrestamoField.getText().trim();
+    String idDocumento = idDocumentoField.getText().trim();
+    String estadoDocumento = (String) estadoComboBox.getSelectedItem();
+    String fechaDevolucionStr = fechaDevolucionField.getText().trim();
 
-        if (idPrestamoStr.isEmpty() || idDocumento.isEmpty() || fechaDevolucionStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+    if (idPrestamoStr.isEmpty() || idDocumento.isEmpty() || fechaDevolucionStr.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    LocalDate fechaDevolucion;
+    try {
+        fechaDevolucion = LocalDate.parse(fechaDevolucionStr, DateTimeFormatter.ISO_LOCAL_DATE);
+    } catch (DateTimeParseException e) {
+        JOptionPane.showMessageDialog(this, "Formato de fecha incorrecto. Use YYYY-MM-DD.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    try (Connection conn = ConexionBaseDatos.getConexion()) {
+        // Obtener detalles del préstamo
+        String detallesPrestamoQuery = "SELECT fecha_devolucion_programada FROM prestamos WHERE id = ? AND id_usuario = ?";
+        PreparedStatement detallesStmt = conn.prepareStatement(detallesPrestamoQuery);
+        detallesStmt.setInt(1, Integer.parseInt(idPrestamoStr));
+        detallesStmt.setString(2, idUsuario);
+        ResultSet detallesRs = detallesStmt.executeQuery();
+
+        if (!detallesRs.next()) {
+            JOptionPane.showMessageDialog(this, "No se encontraron detalles del préstamo o no te pertenece.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        LocalDate fechaDevolucion;
-        try {
-            fechaDevolucion = LocalDate.parse(fechaDevolucionStr, DateTimeFormatter.ISO_LOCAL_DATE);
-        } catch (DateTimeParseException e) {
-            JOptionPane.showMessageDialog(this, "Formato de fecha incorrecto. Use YYYY-MM-DD.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+        // Manejar caso donde `fecha_devolucion_programada` sea nula
+        Date fechaProgramadaSQL = detallesRs.getDate("fecha_devolucion_programada");
+        LocalDate fechaDevolucionProgramada = (fechaProgramadaSQL != null) ? fechaProgramadaSQL.toLocalDate() : null;
+
+        long diasMora = 0;
+        if (fechaDevolucionProgramada != null && fechaDevolucion.isAfter(fechaDevolucionProgramada)) {
+            diasMora = ChronoUnit.DAYS.between(fechaDevolucionProgramada, fechaDevolucion);
         }
 
-        try (Connection conn = ConexionBaseDatos.getConexion()) {
-            // Obtener detalles del préstamo
-            String detallesPrestamoQuery = "SELECT fecha_devolucion_programada FROM prestamos WHERE id = ? AND id_usuario = ?";
-            PreparedStatement detallesStmt = conn.prepareStatement(detallesPrestamoQuery);
-            detallesStmt.setInt(1, Integer.parseInt(idPrestamoStr));
-            detallesStmt.setString(2, idUsuario);
-            ResultSet detallesRs = detallesStmt.executeQuery();
+        double moraDiaria = obtenerMoraDiariaPorRol(conn);
 
-            if (!detallesRs.next()) {
-                JOptionPane.showMessageDialog(this, "No se encontraron detalles del préstamo o no te pertenece.", "Error", JOptionPane.ERROR_MESSAGE);
+        double montoMora = diasMora * moraDiaria;
+
+        if (diasMora > 0) {
+            int respuesta = JOptionPane.showConfirmDialog(this,
+                    "El préstamo tiene mora de $" + String.format("%.2f", montoMora) + ".\n¿Deseas pagar la mora ahora?",
+                    "Mora detectada",
+                    JOptionPane.YES_NO_OPTION);
+
+            if (respuesta == JOptionPane.YES_OPTION) {
+                pagarMora(conn, idPrestamoStr, montoMora);
+            } else {
+                actualizarEstadoMora(conn, idPrestamoStr, diasMora, montoMora);
+                JOptionPane.showMessageDialog(this, "El estado del préstamo permanece en Mora.\nLos días seguirán acumulándose.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                limpiarFormulario();
+                cargarPrestamos();
                 return;
             }
-
-            LocalDate fechaDevolucionProgramada = detallesRs.getDate("fecha_devolucion_programada").toLocalDate();
-
-            long diasMora = 0;
-            if (fechaDevolucion.isAfter(fechaDevolucionProgramada)) {
-                diasMora = ChronoUnit.DAYS.between(fechaDevolucionProgramada, fechaDevolucion);
-            }
-
-            double moraDiaria = obtenerMoraDiariaPorRol(conn);
-
-            double montoMora = diasMora * moraDiaria;
-
-            if (diasMora > 0) {
-                int respuesta = JOptionPane.showConfirmDialog(this,
-                        "El préstamo tiene mora de $" + String.format("%.2f", montoMora) + ".\n¿Deseas pagar la mora ahora?",
-                        "Mora detectada",
-                        JOptionPane.YES_NO_OPTION);
-
-                if (respuesta == JOptionPane.YES_OPTION) {
-                    pagarMora(conn, idPrestamoStr, montoMora);
-                } else {
-                    actualizarEstadoMora(conn, idPrestamoStr, diasMora, montoMora);
-                    JOptionPane.showMessageDialog(this, "El estado del préstamo permanece en Mora.\nLos días seguirán acumulándose.", "Información", JOptionPane.INFORMATION_MESSAGE);
-                    limpiarFormulario();
-                    cargarPrestamos();
-                    return;
-                }
-            }
-
-            registrarDevolucionYActualizar(conn, idPrestamoStr, idDocumento, estadoDocumento, fechaDevolucion, diasMora, montoMora);
-            JOptionPane.showMessageDialog(this, "Devolución registrada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-            cargarPrestamos();
-            limpiarFormulario();
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al registrar devolución: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+
+        registrarDevolucionYActualizar(conn, idPrestamoStr, idDocumento, estadoDocumento, fechaDevolucion, diasMora, montoMora);
+        JOptionPane.showMessageDialog(this, "Devolución registrada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        cargarPrestamos();
+        limpiarFormulario();
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al registrar devolución: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
+}
+
 
     /**
      * Registra el pago de mora y actualiza el estado del préstamo.
