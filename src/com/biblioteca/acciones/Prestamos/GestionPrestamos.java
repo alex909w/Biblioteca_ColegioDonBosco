@@ -98,69 +98,88 @@ public class GestionPrestamos extends JPanel {
     }
 
     private void cargarTablasDesdeTiposDocumentos() {
-        try (Connection conexion = ConexionBaseDatos.getConexion()) {
-            String sql = "SELECT nombre FROM tipos_documentos";
-            PreparedStatement stmt = conexion.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery();
+    try (Connection conexion = ConexionBaseDatos.getConexion()) {
+        // Obtener los nombres de las tablas registradas en la tabla `tipos_documentos`
+        String sql = "SELECT nombre FROM tipos_documentos";
+        PreparedStatement stmt = conexion.prepareStatement(sql);
+        ResultSet rs = stmt.executeQuery();
 
-            while (rs.next()) {
-                tiposDocumentosComboBox.addItem(rs.getString("nombre"));
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al cargar tipos de documentos: " + e.getMessage());
+        while (rs.next()) {
+            tiposDocumentosComboBox.addItem(rs.getString("nombre"));
         }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al cargar tipos de documentos: " + e.getMessage());
+    }
+}
+
+
+   private void buscarLibros() {
+    String correo = correoUsuarioField.getText().trim();
+
+    // Validar que el correo no esté vacío
+    if (correo.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Ingrese el correo del usuario.");
+        return;
     }
 
-    private void buscarLibros() {
-        String correo = correoUsuarioField.getText().trim();
-        if (correo.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Ingrese el correo del usuario.");
+    String tablaSeleccionada = (String) tiposDocumentosComboBox.getSelectedItem();
+
+    // Validar que se haya seleccionado una tabla
+    if (tablaSeleccionada == null) {
+        JOptionPane.showMessageDialog(this, "Seleccione una tabla de tipo de documento.");
+        return;
+    }
+
+    try (Connection conexion = ConexionBaseDatos.getConexion()) {
+        // Verificar que el correo exista en la tabla de usuarios
+        String usuarioQuery = "SELECT id FROM usuarios WHERE email = ?";
+        PreparedStatement usuarioStmt = conexion.prepareStatement(usuarioQuery);
+        usuarioStmt.setString(1, correo);
+        ResultSet usuarioRs = usuarioStmt.executeQuery();
+
+        if (!usuarioRs.next()) {
+            JOptionPane.showMessageDialog(this, "El correo no está registrado.");
             return;
         }
 
-        String tablaSeleccionada = (String) tiposDocumentosComboBox.getSelectedItem();
-        if (tablaSeleccionada == null) {
-            JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento.");
-            return;
+        // Cargar todos los datos de la tabla seleccionada
+        String sql = "SELECT * FROM " + tablaSeleccionada;
+        PreparedStatement stmt = conexion.prepareStatement(sql);
+        ResultSet rs = stmt.executeQuery();
+
+        // Obtener el modelo de la tabla y limpiarlo antes de insertar nuevos datos
+        DefaultTableModel modeloTabla = (DefaultTableModel) tablaLibros.getModel();
+        modeloTabla.setRowCount(0);
+
+        // Leer los metadatos para manejar dinámicamente las columnas de la tabla
+        ResultSetMetaData metaData = rs.getMetaData();
+        int columnCount = metaData.getColumnCount();
+
+        // Establecer los nombres de las columnas en la tabla
+        String[] columnas = new String[columnCount];
+        for (int i = 1; i <= columnCount; i++) {
+            columnas[i - 1] = metaData.getColumnName(i);
+        }
+        modeloTabla.setColumnIdentifiers(columnas);
+
+        // Agregar las filas desde el resultado
+        while (rs.next()) {
+            Object[] row = new Object[columnCount];
+            for (int i = 1; i <= columnCount; i++) {
+                row[i - 1] = rs.getObject(i);
+            }
+            modeloTabla.addRow(row);
         }
 
-        try (Connection conexion = ConexionBaseDatos.getConexion()) {
-            // Validar correo del usuario
-            String usuarioQuery = "SELECT id FROM usuarios WHERE email = ?";
-            PreparedStatement usuarioStmt = conexion.prepareStatement(usuarioQuery);
-            usuarioStmt.setString(1, correo);
-            ResultSet usuarioRs = usuarioStmt.executeQuery();
-
-            if (!usuarioRs.next()) {
-                JOptionPane.showMessageDialog(this, "El correo no está registrado.");
-                return;
-            }
-
-            // Cargar datos de la tabla seleccionada
-            String sql = "SELECT * FROM " + tablaSeleccionada;
-            PreparedStatement stmt = conexion.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery();
-
-            DefaultTableModel modeloTabla = (DefaultTableModel) tablaLibros.getModel();
-            modeloTabla.setRowCount(0);
-
-            ResultSetMetaData metaData = rs.getMetaData();
-            int columnCount = metaData.getColumnCount();
-
-            while (rs.next()) {
-                Object[] row = new Object[columnCount];
-                for (int i = 1; i <= columnCount; i++) {
-                    row[i - 1] = rs.getObject(i);
-                }
-                modeloTabla.addRow(row);
-            }
-
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al buscar documentos: " + e.getMessage());
-        }
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al cargar datos de la tabla seleccionada: " + e.getMessage());
     }
+}
 
-    private void registrarPrestamo() {
+
+
+   private void registrarPrestamo() {
     int filaSeleccionada = tablaLibros.getSelectedRow();
     if (filaSeleccionada == -1) {
         JOptionPane.showMessageDialog(this, "Seleccione un documento para registrar el préstamo.");
@@ -222,7 +241,7 @@ public class GestionPrestamos extends JPanel {
 
         JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.");
 
-        // Recargar la tabla de documentos
+        // Recargar la tabla de documentos para reflejar los cambios
         buscarLibros();
 
     } catch (SQLException e) {
