@@ -207,6 +207,7 @@ public class RegistrarDevolucion extends JPanel {
     }
 
     // Registra la devolución de un préstamo seleccionado.
+// Registra la devolución de un préstamo seleccionado.
 private void registrarDevolucion() {
     String idPrestamoStr = idPrestamoField.getText().trim();
     String idDocumento = idDocumentoField.getText().trim();
@@ -246,37 +247,71 @@ private void registrarDevolucion() {
         long diasMora = 0;
         if (fechaDevolucionProgramada != null && fechaDevolucion.isAfter(fechaDevolucionProgramada)) {
             diasMora = ChronoUnit.DAYS.between(fechaDevolucionProgramada, fechaDevolucion);
-        }
 
-        double moraDiaria = obtenerMoraDiariaPorRol(conn);
+            // Calcular la mora
+            double moraDiaria = obtenerMoraDiariaPorRol(conn);
+            double montoMora = calcularMora(diasMora, moraDiaria);
 
-        double montoMora = diasMora * moraDiaria;
-
-        if (diasMora > 0) {
+            // Mostrar mensaje de mora acumulada
             int respuesta = JOptionPane.showConfirmDialog(this,
-                    "El préstamo tiene mora de $" + String.format("%.2f", montoMora) + ".\n¿Deseas pagar la mora ahora?",
-                    "Mora detectada",
-                    JOptionPane.YES_NO_OPTION);
+                    "El préstamo tiene mora acumulada.\n" +
+                    "Días de retraso: " + diasMora + "\n" +
+                    "Mora diaria: $" + String.format("%.2f", moraDiaria) + "\n" +
+                    "Total de mora: $" + String.format("%.2f", montoMora) + "\n\n" +
+                    "¿Deseas pagar la mora ahora?",
+                    "Mora detectada", JOptionPane.YES_NO_OPTION);
 
             if (respuesta == JOptionPane.YES_OPTION) {
+                // Si el usuario decide pagar la mora
                 pagarMora(conn, idPrestamoStr, montoMora);
+                registrarDevolucionYActualizar(conn, idPrestamoStr, idDocumento, estadoDocumento, fechaDevolucion, diasMora, 0);
+                JOptionPane.showMessageDialog(this, "Devolución registrada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             } else {
+                // Si el usuario decide no pagar la mora
                 actualizarEstadoMora(conn, idPrestamoStr, diasMora, montoMora);
-                JOptionPane.showMessageDialog(this, "El estado del préstamo permanece en Mora.\nLos días seguirán acumulándose.", "Información", JOptionPane.INFORMATION_MESSAGE);
-                limpiarFormulario();
-                cargarPrestamos();
-                return;
+                JOptionPane.showMessageDialog(this, "La mora seguirá acumulándose y el estado del préstamo se ha actualizado a 'En Mora'.", "Información", JOptionPane.INFORMATION_MESSAGE);
             }
+        } else {
+            // Si no hay mora, registrar la devolución directamente
+            registrarDevolucionYActualizar(conn, idPrestamoStr, idDocumento, estadoDocumento, fechaDevolucion, 0, 0);
+            JOptionPane.showMessageDialog(this, "Devolución registrada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
         }
 
-        registrarDevolucionYActualizar(conn, idPrestamoStr, idDocumento, estadoDocumento, fechaDevolucion, diasMora, montoMora);
-        JOptionPane.showMessageDialog(this, "Devolución registrada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
         cargarPrestamos();
         limpiarFormulario();
     } catch (SQLException e) {
         JOptionPane.showMessageDialog(this, "Error al registrar devolución: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
 }
+
+
+/**
+ * Calcula la mora acumulada según los días de retraso y la mora diaria.
+ *
+ * @param diasMora  Días de retraso.
+ * @param moraDiaria Monto de mora diaria.
+ * @return Monto total de la mora.
+ */
+private double calcularMora(long diasMora, double moraDiaria) {
+    return diasMora * moraDiaria;
+}
+
+/**
+ * Muestra un mensaje con los detalles de la mora acumulada.
+ *
+ * @param diasMora  Días de retraso.
+ * @param moraDiaria Monto de mora diaria.
+ * @param montoMora Monto total acumulado.
+ */
+private void mostrarMensajeMora(long diasMora, double moraDiaria, double montoMora) {
+    JOptionPane.showMessageDialog(this,
+            "El préstamo tiene mora acumulada.\n" +
+            "Días de retraso: " + diasMora + "\n" +
+            "Mora diaria: $" + String.format("%.2f", moraDiaria) + "\n" +
+            "Total de mora: $" + String.format("%.2f", montoMora),
+            "Mora detectada", JOptionPane.WARNING_MESSAGE);
+}
+
 
 
     /**
@@ -301,37 +336,16 @@ private void registrarDevolucion() {
 
         JOptionPane.showMessageDialog(this, "La mora de $" + String.format("%.2f", montoMora) + " ha sido pagada.\nEl préstamo se ha registrado como Devuelto.", "Pago exitoso", JOptionPane.INFORMATION_MESSAGE);
     }
+    
+   private void actualizarEstadoMora(Connection conn, String idPrestamoStr, long diasMora, double montoMora) throws SQLException {
+    String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Mora', dias_mora = ?, monto_mora = ? WHERE id = ?";
+    PreparedStatement actualizarPrestamoStmt = conn.prepareStatement(actualizarPrestamoQuery);
+    actualizarPrestamoStmt.setLong(1, diasMora);
+    actualizarPrestamoStmt.setDouble(2, montoMora);
+    actualizarPrestamoStmt.setInt(3, Integer.parseInt(idPrestamoStr));
+    actualizarPrestamoStmt.executeUpdate();
+}
 
-    /**
-     * Actualiza el estado del préstamo a 'Mora' y registra los días y monto de mora.
-     *
-     * @param conn           Conexión a la base de datos.
-     * @param idPrestamoStr  ID del préstamo.
-     * @param diasMora       Días de mora.
-     * @param montoMora      Monto de la mora.
-     * @throws SQLException Si ocurre un error en la base de datos.
-     */
-    private void actualizarEstadoMora(Connection conn, String idPrestamoStr, long diasMora, double montoMora) throws SQLException {
-        String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Mora', dias_mora = ?, monto_mora = ? WHERE id = ?";
-        PreparedStatement actualizarPrestamoStmt = conn.prepareStatement(actualizarPrestamoQuery);
-        actualizarPrestamoStmt.setLong(1, diasMora);
-        actualizarPrestamoStmt.setDouble(2, montoMora);
-        actualizarPrestamoStmt.setInt(3, Integer.parseInt(idPrestamoStr));
-        actualizarPrestamoStmt.executeUpdate();
-    }
-
-    /**
-     * Registra la devolución en las tablas correspondientes y actualiza la disponibilidad del documento.
-     *
-     * @param conn             Conexión a la base de datos.
-     * @param idPrestamoStr    ID del préstamo.
-     * @param idDocumento      ID del documento.
-     * @param estadoDocumento  Estado del documento.
-     * @param fechaDevolucion  Fecha real de devolución.
-     * @param diasMora         Días de mora.
-     * @param montoMora        Monto de la mora.
-     * @throws SQLException Si ocurre un error en la base de datos.
-     */
     private void registrarDevolucionYActualizar(Connection conn, String idPrestamoStr, String idDocumento, String estadoDocumento,
                                                LocalDate fechaDevolucion, long diasMora, double montoMora) throws SQLException {
         // Insertar en la tabla `devoluciones`
@@ -370,13 +384,6 @@ private void registrarDevolucion() {
         actualizarDocumentoStmt.executeUpdate();
     }
 
-    /**
-     * Obtiene la mora diaria asociada al rol del usuario.
-     *
-     * @param conn Conexión a la base de datos.
-     * @return Mora diaria.
-     * @throws SQLException Si ocurre un error en la consulta.
-     */
     private double obtenerMoraDiariaPorRol(Connection conn) throws SQLException {
         String rolQuery = "SELECT rol FROM usuarios WHERE id = ?";
         PreparedStatement rolStmt = conn.prepareStatement(rolQuery);
@@ -398,12 +405,6 @@ private void registrarDevolucion() {
         return 1.50; // Valor predeterminado si no se encuentra
     }
 
-    /**
-     * Crea una etiqueta estilizada.
-     *
-     * @param text Texto de la etiqueta.
-     * @return JLabel estilizada.
-     */
     private JLabel createStyledLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Arial", Font.BOLD, 14));
@@ -411,11 +412,6 @@ private void registrarDevolucion() {
         return label;
     }
 
-    /**
-     * Crea un campo de texto estilizado.
-     *
-     * @return JTextField estilizado.
-     */
     private JTextField createStyledTextField() {
         JTextField textField = new JTextField();
         textField.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -424,12 +420,6 @@ private void registrarDevolucion() {
         return textField;
     }
 
-    /**
-     * Crea un JComboBox estilizado.
-     *
-     * @param items Elementos del JComboBox.
-     * @return JComboBox estilizado.
-     */
     private JComboBox<String> createStyledComboBox(String[] items) {
         JComboBox<String> comboBox = new JComboBox<>(items);
         comboBox.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -437,14 +427,6 @@ private void registrarDevolucion() {
         return comboBox;
     }
 
-    /**
-     * Crea un botón estilizado con colores por defecto y de hover.
-     *
-     * @param text         Texto del botón.
-     * @param defaultColor Color de fondo por defecto.
-     * @param hoverColor   Color de fondo al pasar el mouse.
-     * @return JButton estilizado.
-     */
     private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
         JButton button = new JButton(text);
         button.setFont(new Font("Arial", Font.BOLD, 14));
@@ -477,4 +459,25 @@ private void registrarDevolucion() {
         estadoComboBox.setSelectedIndex(0);
         prestamosTable.clearSelection();
     }
+    
+    private int obtenerDiasPrestamoPorRol(Connection conn) throws SQLException {
+    String rolQuery = "SELECT rol FROM usuarios WHERE id = ?";
+    PreparedStatement rolStmt = conn.prepareStatement(rolQuery);
+    rolStmt.setString(1, idUsuario);
+    ResultSet rs = rolStmt.executeQuery();
+
+    if (rs.next()) {
+        String rol = rs.getString("rol").toLowerCase();
+        String diasQuery = "SELECT valor FROM configuraciones WHERE clave = ?";
+        PreparedStatement diasStmt = conn.prepareStatement(diasQuery);
+        diasStmt.setString(1, "limite_prestamos_" + rol);
+        ResultSet diasRs = diasStmt.executeQuery();
+
+        if (diasRs.next()) {
+            return diasRs.getInt("valor");
+        }
+    }
+    return 3; // Valor predeterminado si no se encuentra
+}
+
 }

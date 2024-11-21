@@ -20,6 +20,7 @@ public class GestionPrestamos extends JPanel {
     private JLabel infoLabel; // Etiqueta para mostrar el correo del usuario
     private JLabel rolLabel;  // Etiqueta para mostrar el rol del usuario
 
+
     public GestionPrestamos(String emailUsuario) {
         this.emailUsuario = emailUsuario; // Asignar el correo recibido
         setLayout(new BorderLayout(15, 15)); // Margen entre componentes
@@ -90,7 +91,7 @@ public class GestionPrestamos extends JPanel {
         panelInferior.setLayout(new FlowLayout(FlowLayout.RIGHT, 10, 10));
         panelInferior.setBackground(new Color(255, 255, 255));
 
-        diasPrestamoComboBox = new JComboBox<>(new Integer[]{7, 14, 21});
+        diasPrestamoComboBox = new JComboBox<>();
         registrarButton = new JButton("Registrar Préstamo");
 
         registrarButton.setBackground(new Color(0, 123, 255));
@@ -106,28 +107,45 @@ public class GestionPrestamos extends JPanel {
 
         // Cargar nombres de tablas desde tipos_documentos
         cargarTablasDesdeTiposDocumentos();
+        cargarDiasPrestamoPorRol(); // Cargar días de préstamo según el rol
 
         // Eventos
-        buscarButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                buscarLibros();
-            }
-        });
-
-        registrarButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                registrarPrestamo();
-            }
-        });
+        buscarButton.addActionListener(e -> buscarLibros());
+        registrarButton.addActionListener(e -> registrarPrestamo());
     }
 
-    /**
-     * Método para obtener el rol del usuario autenticado basado en su correo.
-     *
-     * @return Rol del usuario.
-     */
+   private void cargarDiasPrestamoPorRol() {
+    String rolUsuario = obtenerRolUsuarioAutenticado();
+    if (rolUsuario == null || rolUsuario.trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, "No se pudo obtener el rol del usuario.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    rolUsuario = rolUsuario.toLowerCase();
+
+    try (Connection conexion = ConexionBaseDatos.getConexion()) {
+        String query = "SELECT valor FROM configuraciones WHERE clave = ?";
+        PreparedStatement stmt = conexion.prepareStatement(query);
+        stmt.setString(1, "limite_dias_" + rolUsuario);
+        ResultSet rs = stmt.executeQuery();
+
+        if (rs.next()) {
+            int limiteDias = rs.getInt("valor");
+            diasPrestamoComboBox.removeAllItems();
+            for (int i = 1; i <= limiteDias; i++) {
+                diasPrestamoComboBox.addItem(i);
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "No se encontró configuración de límite de días para el rol: " + rolUsuario, "Advertencia", JOptionPane.WARNING_MESSAGE);
+            // Opcional: Agregar un valor predeterminado
+            diasPrestamoComboBox.removeAllItems();
+            diasPrestamoComboBox.addItem(7); // Valor por defecto
+        }
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al cargar días de préstamo: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+
+    
     private String obtenerRolUsuarioAutenticado() {
         String rol = "Desconocido"; // Valor por defecto
         try (Connection conexion = ConexionBaseDatos.getConexion()) {
@@ -239,153 +257,139 @@ public class GestionPrestamos extends JPanel {
         return -1; // Retorna -1 si la columna no se encuentra
     }
 
-    /**
-     * Registra un préstamo para el documento seleccionado.
-     * Utiliza la información del usuario que ha iniciado sesión.
-     */
-    private void registrarPrestamo() {
-        int filaSeleccionada = tablaLibros.getSelectedRow();
-        if (filaSeleccionada == -1) {
-            JOptionPane.showMessageDialog(this, "Seleccione un documento para registrar el préstamo.");
-            return;
-        }
+    
+   private void registrarPrestamo() {
+    int filaSeleccionada = tablaLibros.getSelectedRow();
+    if (filaSeleccionada == -1) {
+        JOptionPane.showMessageDialog(this, "Seleccione un documento para registrar el préstamo.");
+        return;
+    }
 
-        String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
-        if (tipoDocumento == null || tipoDocumento.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento válido.");
-            return;
-        }
+    String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
+    if (tipoDocumento == null || tipoDocumento.trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento válido.");
+        return;
+    }
 
-        // Obtener el índice de la columna "Cantidad Disponible" o "cantidad_disponible"
-        int cantidadDisponibleIndex = getColumnIndex("Cantidad Disponible");
+    // Obtener el índice de la columna "Cantidad Disponible" o "cantidad_disponible"
+    int cantidadDisponibleIndex = getColumnIndex("Cantidad Disponible");
+    if (cantidadDisponibleIndex == -1) {
+        cantidadDisponibleIndex = getColumnIndex("cantidad_disponible"); // Intentar con minúsculas
         if (cantidadDisponibleIndex == -1) {
-            cantidadDisponibleIndex = getColumnIndex("cantidad_disponible"); // Intentar con minúsculas
-            if (cantidadDisponibleIndex == -1) {
-                JOptionPane.showMessageDialog(this, "La columna 'Cantidad Disponible' no se encontró en la tabla.");
-                return;
-            }
-        }
-
-        try {
-            // Obtener el correo del usuario autenticado
-            String correo = emailUsuario;
-            if (correo == null || correo.trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "No se pudo obtener la información del usuario de la sesión.");
-                return;
-            }
-
-            // Obtener valores de la fila seleccionada
-            String idDocumento = tablaLibros.getValueAt(filaSeleccionada, 0).toString(); // Asegúrate que "ID" está en la columna 0
-            String cantidadDisponibleStr = tablaLibros.getValueAt(filaSeleccionada, cantidadDisponibleIndex).toString();
-            int cantidadDisponible = Integer.parseInt(cantidadDisponibleStr);
-
-            if (cantidadDisponible <= 0) {
-                JOptionPane.showMessageDialog(this, "No hay suficientes copias disponibles para realizar el préstamo.");
-                return;
-            }
-
-            int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
-
-            try (Connection conexion = ConexionBaseDatos.getConexion()) {
-                // Validar correo del usuario y obtener su ID y rol
-                String usuarioQuery = "SELECT id, rol FROM usuarios WHERE email = ?";
-                PreparedStatement usuarioStmt = conexion.prepareStatement(usuarioQuery);
-                usuarioStmt.setString(1, correo);
-                ResultSet usuarioRs = usuarioStmt.executeQuery();
-
-                if (!usuarioRs.next()) {
-                    JOptionPane.showMessageDialog(this, "El correo ingresado no pertenece a un usuario registrado.");
-                    return;
-                }
-
-                String idUsuario = usuarioRs.getString("id");
-                String rolUsuario = usuarioRs.getString("rol").toLowerCase();
-
-                // Validar límite de préstamos por rol
-                if (!validarLimitePrestamos(idUsuario, conexion)) {
-                    JOptionPane.showMessageDialog(this, "El usuario ha alcanzado el límite de préstamos permitidos para su rol.");
-                    return;
-                }
-
-                // Insertar el préstamo en la tabla `prestamos`
-                String prestamoQuery = "INSERT INTO prestamos (id_usuario, id_documento, dias_prestamo, fecha_prestamo, fecha_devolucion, estado) " +
-                        "VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Pendiente')";
-                PreparedStatement prestamoStmt = conexion.prepareStatement(prestamoQuery);
-                prestamoStmt.setString(1, idUsuario);
-                prestamoStmt.setString(2, idDocumento);
-                prestamoStmt.setInt(3, diasPrestamo);
-                prestamoStmt.setInt(4, diasPrestamo);
-                prestamoStmt.executeUpdate();
-
-                // Actualizar la cantidad disponible en la tabla dinámica
-                String actualizarDisponibilidadQuery = "UPDATE " + tipoDocumento + " SET cantidad_disponible = cantidad_disponible - 1 WHERE id_libros = ?";
-                PreparedStatement actualizarStmt = conexion.prepareStatement(actualizarDisponibilidadQuery);
-                actualizarStmt.setString(1, idDocumento);
-                actualizarStmt.executeUpdate();
-
-                JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.");
-
-                // Recargar la tabla para reflejar los cambios
-                buscarLibros();
-
-            } catch (SQLException e) {
-                JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage());
-            }
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "La cantidad disponible no es válida. Verifique los datos del documento.");
+            JOptionPane.showMessageDialog(this, "La columna 'Cantidad Disponible' no se encontró en la tabla.");
+            return;
         }
     }
 
-    /**
-     * Valida si el usuario ha alcanzado el límite de préstamos permitidos según su rol.
-     *
-     * @param idUsuario ID del usuario.
-     * @param conexion  Conexión a la base de datos.
-     * @return true si puede realizar más préstamos, false de lo contrario.
-     * @throws SQLException si ocurre un error en la consulta.
-     */
-    private boolean validarLimitePrestamos(String idUsuario, Connection conexion) throws SQLException {
-        // Obtener el rol del usuario
-        String rolQuery = "SELECT rol FROM usuarios WHERE id = ?";
-        PreparedStatement rolStmt = conexion.prepareStatement(rolQuery);
-        rolStmt.setString(1, idUsuario);
-        ResultSet rolRs = rolStmt.executeQuery();
+    try {
+        // Obtener el correo del usuario autenticado
+        String correo = emailUsuario;
+        if (correo == null || correo.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No se pudo obtener la información del usuario de la sesión.");
+            return;
+        }
 
-        if (rolRs.next()) {
-            String rol = rolRs.getString("rol").toLowerCase();
+        // Obtener valores de la fila seleccionada
+        String idDocumento = tablaLibros.getValueAt(filaSeleccionada, 0).toString(); // Asegúrate que "ID" está en la columna 0
+        String cantidadDisponibleStr = tablaLibros.getValueAt(filaSeleccionada, cantidadDisponibleIndex).toString();
+        int cantidadDisponible = Integer.parseInt(cantidadDisponibleStr);
 
-            // Obtener el límite de préstamos para el rol del usuario
-            String limiteQuery = "SELECT valor FROM configuraciones WHERE clave = ?";
-            PreparedStatement limiteStmt = conexion.prepareStatement(limiteQuery);
-            limiteStmt.setString(1, "limite_prestamos_" + rol);
+        if (cantidadDisponible <= 0) {
+            JOptionPane.showMessageDialog(this, "No hay suficientes copias disponibles para realizar el préstamo.");
+            return;
+        }
 
-            ResultSet limiteRs = limiteStmt.executeQuery();
-            if (limiteRs.next()) {
-                int limitePrestamos = limiteRs.getInt("valor");
+        int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
 
-                // Contar la cantidad de préstamos activos del usuario
-                String prestamosQuery = "SELECT COUNT(*) AS prestamos_activos FROM prestamos WHERE id_usuario = ? AND estado = 'Pendiente'";
-                PreparedStatement prestamosStmt = conexion.prepareStatement(prestamosQuery);
-                prestamosStmt.setString(1, idUsuario);
+        try (Connection conexion = ConexionBaseDatos.getConexion()) {
+            // Validar correo del usuario y obtener su ID y rol
+            String usuarioQuery = "SELECT id, rol FROM usuarios WHERE email = ?";
+            PreparedStatement usuarioStmt = conexion.prepareStatement(usuarioQuery);
+            usuarioStmt.setString(1, correo);
+            ResultSet usuarioRs = usuarioStmt.executeQuery();
 
-                ResultSet prestamosRs = prestamosStmt.executeQuery();
-                if (prestamosRs.next()) {
-                    int prestamosActivos = prestamosRs.getInt("prestamos_activos");
-                    return prestamosActivos < limitePrestamos; // Validar si está dentro del límite
-                }
+            if (!usuarioRs.next()) {
+                JOptionPane.showMessageDialog(this, "El correo ingresado no pertenece a un usuario registrado.");
+                return;
+            }
+
+            String idUsuario = usuarioRs.getString("id");
+            String rolUsuario = usuarioRs.getString("rol").toLowerCase();
+
+            // Validar límite de préstamos por rol
+            if (!validarLimitePrestamos(idUsuario, conexion)) {
+                JOptionPane.showMessageDialog(this, "El usuario ha alcanzado el límite de préstamos permitidos para su rol.");
+                return;
+            }
+
+            // Obtener la mora diaria para el rol
+            double moraDiaria = obtenerMoraDiariaPorRol(idUsuario, conexion);
+
+            // Insertar el préstamo en la tabla `prestamos` con mora_diaria
+            String prestamoQuery = "INSERT INTO prestamos (id_usuario, id_documento, mora_diaria, fecha_prestamo, fecha_devolucion, estado, fecha_devolucion_programada) " +
+                    "VALUES (?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), 'Pendiente', DATE_ADD(CURDATE(), INTERVAL ? DAY))";
+            PreparedStatement prestamoStmt = conexion.prepareStatement(prestamoQuery);
+            prestamoStmt.setString(1, idUsuario);
+            prestamoStmt.setString(2, idDocumento);
+            prestamoStmt.setDouble(3, moraDiaria);
+            prestamoStmt.setInt(4, diasPrestamo);
+            prestamoStmt.setInt(5, diasPrestamo);
+            prestamoStmt.executeUpdate();
+
+            // Actualizar la cantidad disponible en la tabla dinámica
+            String actualizarDisponibilidadQuery = "UPDATE " + tipoDocumento + " SET cantidad_disponible = cantidad_disponible - 1 WHERE id_libros = ?";
+            PreparedStatement actualizarStmt = conexion.prepareStatement(actualizarDisponibilidadQuery);
+            actualizarStmt.setString(1, idDocumento);
+            actualizarStmt.executeUpdate();
+
+            JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.");
+
+            // Recargar la tabla para reflejar los cambios
+            buscarLibros();
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage());
+        }
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(this, "La cantidad disponible no es válida. Verifique los datos del documento.");
+    }
+}
+
+
+   private boolean validarLimitePrestamos(String idUsuario, Connection conexion) throws SQLException {
+    // Obtener el rol del usuario
+    String rolQuery = "SELECT rol FROM usuarios WHERE id = ?";
+    PreparedStatement rolStmt = conexion.prepareStatement(rolQuery);
+    rolStmt.setString(1, idUsuario);
+    ResultSet rolRs = rolStmt.executeQuery();
+
+    if (rolRs.next()) {
+        String rol = rolRs.getString("rol").toLowerCase();
+
+        // Obtener el límite de préstamos para el rol del usuario
+        String limiteQuery = "SELECT valor FROM configuraciones WHERE clave = ?";
+        PreparedStatement limiteStmt = conexion.prepareStatement(limiteQuery);
+        limiteStmt.setString(1, "limite_prestamos_" + rol);
+
+        ResultSet limiteRs = limiteStmt.executeQuery();
+        if (limiteRs.next()) {
+            int limitePrestamos = limiteRs.getInt("valor");
+
+            // Contar la cantidad de préstamos activos del usuario
+            String prestamosQuery = "SELECT COUNT(*) AS prestamos_activos FROM prestamos WHERE id_usuario = ? AND estado = 'Pendiente'";
+            PreparedStatement prestamosStmt = conexion.prepareStatement(prestamosQuery);
+            prestamosStmt.setString(1, idUsuario);
+
+            ResultSet prestamosRs = prestamosStmt.executeQuery();
+            if (prestamosRs.next()) {
+                int prestamosActivos = prestamosRs.getInt("prestamos_activos");
+                return prestamosActivos < limitePrestamos; // Validar si está dentro del límite
             }
         }
-        return false; // Por defecto, denegar si algo falla
     }
+    return false; // Por defecto, denegar si algo falla
+}
 
-    /**
-     * Obtiene la mora diaria asociada al rol del usuario.
-     *
-     * @param idUsuario ID del usuario.
-     * @param conexion  Conexión a la base de datos.
-     * @return Mora diaria.
-     * @throws SQLException si ocurre un error en la consulta.
-     */
     private double obtenerMoraDiariaPorRol(String idUsuario, Connection conexion) throws SQLException {
         // Obtener el rol del usuario
         String rolQuery = "SELECT rol FROM usuarios WHERE id = ?";

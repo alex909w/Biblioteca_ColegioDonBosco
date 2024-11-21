@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1:3306
--- Tiempo de generación: 21-11-2024 a las 14:52:54
+-- Tiempo de generación: 21-11-2024 a las 19:26:18
 -- Versión del servidor: 8.3.0
 -- Versión de PHP: 8.2.18
 
@@ -20,6 +20,8 @@ SET time_zone = "+00:00";
 --
 -- Base de datos: `biblioteca_colegio`
 --
+CREATE DATABASE IF NOT EXISTS `biblioteca_colegio` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `biblioteca_colegio`;
 
 -- --------------------------------------------------------
 
@@ -40,6 +42,26 @@ CREATE TABLE IF NOT EXISTS `auditoria` (
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `cds`
+--
+
+DROP TABLE IF EXISTS `cds`;
+CREATE TABLE IF NOT EXISTS `cds` (
+  `id_cds` varchar(15) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Descripcion` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Fecha` date DEFAULT NULL,
+  `Titulo` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ubicacion_fisica` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cantidad_disponible` int DEFAULT '0',
+  `cantidad_total` int DEFAULT '0',
+  `estado` enum('Bueno','Dañado','En Reparación') COLLATE utf8mb4_unicode_ci DEFAULT 'Bueno',
+  `palabras_clave` text COLLATE utf8mb4_unicode_ci,
+  PRIMARY KEY (`id_cds`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `configuraciones`
 --
 
@@ -51,7 +73,7 @@ CREATE TABLE IF NOT EXISTS `configuraciones` (
   `fecha_modificacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `clave` (`clave`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `configuraciones`
@@ -59,7 +81,16 @@ CREATE TABLE IF NOT EXISTS `configuraciones` (
 
 INSERT INTO `configuraciones` (`id`, `clave`, `valor`, `fecha_modificacion`) VALUES
 (1, 'mora_diaria', 1.50, '2024-11-21 14:22:49'),
-(2, 'limite_prestamos', 3.00, '2024-11-21 14:22:49');
+(2, 'limite_prestamos', 3.00, '2024-11-21 14:22:49'),
+(3, 'mora_administrador', 0.50, '2024-11-21 19:24:26'),
+(4, 'mora_profesor', 1.50, '2024-11-21 14:55:05'),
+(5, 'mora_alumno', 1.00, '2024-11-21 14:55:05'),
+(6, 'limite_prestamos_administrador', 5.00, '2024-11-21 14:55:05'),
+(7, 'limite_prestamos_profesor', 4.00, '2024-11-21 14:55:05'),
+(8, 'limite_prestamos_alumno', 2.00, '2024-11-21 15:11:36'),
+(9, 'limite_dias_administrador', 7.00, '2024-11-21 18:42:02'),
+(10, 'limite_dias_profesor', 15.00, '2024-11-21 19:24:16'),
+(11, 'limite_dias_alumno', 14.00, '2024-11-21 18:37:21');
 
 -- --------------------------------------------------------
 
@@ -79,19 +110,26 @@ CREATE TABLE IF NOT EXISTS `devoluciones` (
   PRIMARY KEY (`id`),
   KEY `id_prestamo` (`id_prestamo`),
   KEY `id_usuario` (`id_usuario`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `devoluciones`
 --
 
 INSERT INTO `devoluciones` (`id`, `id_prestamo`, `id_usuario`, `id_documento`, `fecha_devolucion_real`, `dias_mora`, `monto_mora`) VALUES
-(1, 1, 'AD00001', 'LIB0010', '2024-11-21', 0, 0.00),
-(2, 4, 'AD00001', 'LIB0008', '2024-11-21', 0, 0.00),
-(3, 3, 'AD00001', 'LIB0009', '2024-11-21', 0, 0.00),
-(4, 2, 'AD00001', 'LIB0010', '2024-11-21', 0, 0.00),
-(5, 6, 'AD00001', 'LIB0010', '2024-12-01', 3, 4.50),
-(6, 6, 'AD00001', 'LIB0010', '2024-12-15', 17, 25.50);
+(16, 19, 'AD00001', 'LIB0010', '2024-11-21', 0, 0.00),
+(17, 18, 'AD00001', 'LIB0010', '2024-08-21', 0, 0.00),
+(18, 20, 'AD00001', 'LIB0010', '2024-12-21', 0, 0.00),
+(19, 21, 'AD00001', 'LIB0010', '2024-12-31', 0, 0.00),
+(20, 22, 'AD00001', 'LIB0010', '2024-12-31', 0, 0.00),
+(21, 23, 'AD00001', 'LIB0010', '2024-11-21', 0, 0.00),
+(22, 24, 'AD00001', 'LIB0010', '2024-11-21', 0, 0.00),
+(23, 25, 'AD00001', 'LIB0010', '2024-11-29', 0, 0.00),
+(24, 26, 'AD00001', 'LIB0010', '2024-11-30', 0, 0.00),
+(25, 27, 'AD00001', 'LIB0010', '2024-12-21', 0, 0.00),
+(26, 28, 'AD00001', 'LIB0010', '2024-12-01', 0, 0.00),
+(27, 29, 'AD00001', 'LIB0010', '2024-11-23', 1, 0.00),
+(28, 30, 'AD00001', 'LIB0008', '2024-12-31', 39, 0.00);
 
 -- --------------------------------------------------------
 
@@ -111,7 +149,26 @@ CREATE TABLE IF NOT EXISTS `historial_prestamos` (
   PRIMARY KEY (`id`),
   KEY `id_prestamo` (`id_prestamo`),
   KEY `id_usuario` (`id_usuario`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Volcado de datos para la tabla `historial_prestamos`
+--
+
+INSERT INTO `historial_prestamos` (`id`, `id_prestamo`, `id_usuario`, `id_documento`, `accion`, `descripcion`, `fecha`) VALUES
+(8, 19, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 17:51:54'),
+(9, 18, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 17:52:20'),
+(10, 20, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 17:52:43'),
+(11, 21, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 17:56:54'),
+(12, 22, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 18:00:57'),
+(13, 23, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 18:10:19'),
+(14, 24, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 18:45:39'),
+(15, 25, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 18:49:37'),
+(16, 26, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 18:50:02'),
+(17, 27, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 18:53:57'),
+(18, 28, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 18:58:30'),
+(19, 29, 'AD00001', 'LIB0010', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 19:12:57'),
+(20, 30, 'AD00001', 'LIB0008', 'Devolución', 'Artículo devuelto correctamente.', '2024-11-21 19:13:18');
 
 -- --------------------------------------------------------
 
@@ -153,7 +210,7 @@ INSERT INTO `libros` (`id_libros`, `Título`, `Autor(es)`, `Categoría`, `Fecha_
 ('LIB0007', 'La Odisea', 'Homero', 'Épico', '0800-01-01', 'Ediciones Gredos', '978-0-14-026886-7', 'Primera edición', 'Griego', 'El viaje de Odiseo para regresar a Ítaca.', 'Sección G, Estantería 3, Nivel 4', 5, 5, 'Bueno', 'Mitología, Épico, Grecia'),
 ('LIB0008', 'La Sombra del Viento', 'Carlos Ruiz Zafón', 'Misterio', '2001-01-01', 'Planeta', '978-84-08-03444-5', 'Primera edición', 'Español', 'Un joven encuentra un libro que cambiará su vida.', 'Sección H, Estantería 2, Nivel 3', 7, 7, 'Bueno', 'Misterio, Barcelona, Literatura'),
 ('LIB0009', 'Harry Potter y la Piedra Filosofal', 'J.K. Rowling', 'Fantasía', '1997-06-26', 'Bloomsbury', '978-0-7475-3269-9', 'Primera edición', 'Inglés', 'El inicio de las aventuras de Harry Potter.', 'Sección I, Estantería 5, Nivel 1', 10, 10, 'Bueno', 'Magia, Hogwarts, Fantasía'),
-('LIB0010', 'El Alquimista', 'Paulo Coelho', 'Ficción', '1988-01-01', 'Rocco', '978-0-06-112241-5', 'Primera edición', 'Portugués', 'Un joven pastor busca su leyenda personal.', 'Sección J, Estantería 4, Nivel 2', 7, 7, 'Bueno', 'Filosofía, Sueños, Viaje');
+('LIB0010', 'El Alquimista', 'Paulo Coelho', 'Ficción', '1988-01-01', 'Rocco', '978-0-06-112241-5', 'Primera edición', 'Portugués', 'Un joven pastor busca su leyenda personal.', 'Sección J, Estantería 4, Nivel 2', 1, 6, 'Bueno', 'Filosofía, Sueños, Viaje');
 
 -- --------------------------------------------------------
 
@@ -169,14 +226,17 @@ CREATE TABLE IF NOT EXISTS `pagos_mora` (
   `fecha_pago` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `id_prestamo` (`id_prestamo`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `pagos_mora`
 --
 
 INSERT INTO `pagos_mora` (`id`, `id_prestamo`, `monto_pagado`, `fecha_pago`) VALUES
-(1, 6, 25.50, '2024-11-21 14:45:40');
+(1, 6, 25.50, '2024-11-21 14:45:40'),
+(2, 7, 46.00, '2024-11-21 15:22:48'),
+(3, 5, 96.00, '2024-11-21 15:23:01'),
+(4, 13, 4.00, '2024-11-21 15:50:01');
 
 -- --------------------------------------------------------
 
@@ -189,28 +249,41 @@ CREATE TABLE IF NOT EXISTS `prestamos` (
   `id` int NOT NULL AUTO_INCREMENT,
   `id_usuario` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `id_documento` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `dias_prestamo` int NOT NULL,
+  `mora_diaria` int NOT NULL,
   `fecha_prestamo` date NOT NULL,
   `fecha_devolucion` date NOT NULL,
   `estado` enum('Pendiente','Devuelto','Mora') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Pendiente',
   `dias_mora` int DEFAULT NULL,
   `monto_mora` decimal(10,2) DEFAULT NULL,
   `fecha_registro` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `fecha_devolucion_programada` date DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `id_usuario` (`id_usuario`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=36 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `prestamos`
 --
 
-INSERT INTO `prestamos` (`id`, `id_usuario`, `id_documento`, `dias_prestamo`, `fecha_prestamo`, `fecha_devolucion`, `estado`, `dias_mora`, `monto_mora`, `fecha_registro`) VALUES
-(1, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 14:33:29'),
-(2, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 14:37:16'),
-(3, 'AD00001', 'LIB0009', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 14:37:19'),
-(4, 'AD00001', 'LIB0008', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 14:37:22'),
-(5, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Pendiente', NULL, NULL, '2024-11-21 14:39:11'),
-(6, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Devuelto', 17, 25.50, '2024-11-21 14:39:14');
+INSERT INTO `prestamos` (`id`, `id_usuario`, `id_documento`, `mora_diaria`, `fecha_prestamo`, `fecha_devolucion`, `estado`, `dias_mora`, `monto_mora`, `fecha_registro`, `fecha_devolucion_programada`) VALUES
+(18, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 17:46:17', NULL),
+(19, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 17:46:24', NULL),
+(20, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 17:52:28', NULL),
+(21, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 17:56:34', NULL),
+(22, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 17:58:28', NULL),
+(23, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 18:10:00', NULL),
+(24, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 18:45:17', NULL),
+(25, 'AD00001', 'LIB0010', 7, '2024-11-21', '2024-11-28', 'Devuelto', 0, 0.00, '2024-11-21 18:48:56', NULL),
+(26, 'AD00001', 'LIB0010', 1, '2024-11-21', '2024-11-22', 'Devuelto', 0, 0.00, '2024-11-21 18:49:46', NULL),
+(27, 'AD00001', 'LIB0010', 1, '2024-11-21', '2024-11-22', 'Devuelto', 0, 0.00, '2024-11-21 18:53:34', NULL),
+(28, 'AD00001', 'LIB0010', 1, '2024-11-21', '2024-11-22', 'Devuelto', 0, 0.00, '2024-11-21 18:58:10', NULL),
+(29, 'AD00001', 'LIB0010', 2, '2024-11-21', '2024-11-22', 'Devuelto', 1, 0.00, '2024-11-21 19:11:30', '2024-11-22'),
+(30, 'AD00001', 'LIB0008', 2, '2024-11-21', '2024-11-22', 'Devuelto', 39, 0.00, '2024-11-21 19:12:35', '2024-11-22'),
+(31, 'AD00001', 'LIB0010', 2, '2024-11-21', '2024-11-22', 'Mora', 8, 16.00, '2024-11-21 19:16:15', '2024-11-22'),
+(32, 'AD00001', 'LIB0010', 2, '2024-11-21', '2024-11-26', 'Mora', 4, 8.00, '2024-11-21 19:16:36', '2024-11-26'),
+(33, 'AD00001', 'LIB0010', 2, '2024-11-21', '2024-11-27', 'Mora', 3, 6.00, '2024-11-21 19:16:43', '2024-11-27'),
+(34, 'AD00001', 'LIB0010', 2, '2024-11-21', '2024-11-28', 'Mora', 2, 4.00, '2024-11-21 19:16:48', '2024-11-28'),
+(35, 'AD00001', 'LIB0010', 2, '2024-11-21', '2024-11-22', 'Mora', 39, 78.00, '2024-11-21 19:17:03', '2024-11-22');
 
 -- --------------------------------------------------------
 
@@ -225,14 +298,15 @@ CREATE TABLE IF NOT EXISTS `tipos_documentos` (
   `fecha_creacion` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `nombre` (`nombre`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Volcado de datos para la tabla `tipos_documentos`
 --
 
 INSERT INTO `tipos_documentos` (`id`, `nombre`, `fecha_creacion`) VALUES
-(2, 'Libros', '2024-11-21 14:28:05');
+(2, 'Libros', '2024-11-21 14:28:05'),
+(3, 'Cds', '2024-11-21 19:25:22');
 
 -- --------------------------------------------------------
 
@@ -261,8 +335,8 @@ CREATE TABLE IF NOT EXISTS `usuarios` (
 
 INSERT INTO `usuarios` (`id`, `nombre`, `email`, `rol`, `contraseña`, `telefono`, `direccion`, `fecha_nacimiento`, `fecha_registro`) VALUES
 ('AD00001', 'Administrador General', 'admin@colegio.com', 'Administrador', 'admin123', '555-1234', 'Oficina Central', '1975-05-20', '2024-11-21 14:22:49'),
-('AL00001', 'Alumno Pérez', 'alumno.perez@colegio.com', 'Alumno', 'alumno123', '555-9101', 'Residencia Universitaria', '2001-08-15', '2024-11-21 14:22:49'),
-('PR00001', 'Profesor López', 'profesor.lopez@colegio.com', 'Profesor', 'profesor123', '555-5678', 'Facultad de Ciencias', '1985-11-10', '2024-11-21 14:22:49');
+('AL00001', 'Alumno Pérez', 'alumno@colegio.com', 'Alumno', 'alumno123', '555-9101', 'Residencia Universitaria', '2001-08-15', '2024-11-21 14:22:49'),
+('PR00001', 'Profesor López', 'profesor@colegio.com', 'Profesor', 'profesor123', '555-5678', 'Facultad de Ciencias', '1985-11-10', '2024-11-21 14:22:49');
 
 --
 -- Restricciones para tablas volcadas
