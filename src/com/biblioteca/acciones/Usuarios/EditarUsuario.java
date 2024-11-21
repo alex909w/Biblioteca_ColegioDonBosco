@@ -148,8 +148,8 @@ public class EditarUsuario extends JPanel {
             return false;
         }
 
-        if (!Pattern.matches("^[a-zA-Z\\s]+$", nombre)) {
-            JOptionPane.showMessageDialog(this, "El nombre solo debe contener letras y espacios.");
+        if (!Pattern.matches("^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\\s]+$", nombre)) {
+            JOptionPane.showMessageDialog(this, "El nombre solo debe contener letras, espacios y caracteres especiales como tildes.");
             return false;
         }
 
@@ -171,7 +171,7 @@ public class EditarUsuario extends JPanel {
         try {
             LocalDate.parse(fechaNacimiento);
         } catch (DateTimeParseException ex) {
-            JOptionPane.showMessageDialog(this, "La fecha de nacimiento debe estar en formato YYYY-MM-DD.");
+            JOptionPane.showMessageDialog(this, "La fecha de nacimiento debe estar en formato DD-MM-YYYY.");
             return false;
         }
 
