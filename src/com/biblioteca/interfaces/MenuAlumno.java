@@ -3,7 +3,7 @@ package com.biblioteca.interfaces;
 import com.biblioteca.acciones.Mora.VerMoraPendiente;
 import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
-import com.biblioteca.acciones.Prestamos.GestionPrestamos;
+import com.biblioteca.acciones.Prestamos.ConsultarPrestamos;
 
 import javax.swing.*;
 import java.awt.*;
@@ -185,6 +185,7 @@ public class MenuAlumno extends JFrame {
 
     private void ejecutarFuncionAlumno(String submenu) {
         panelCentral.removeAll();
+        String correoUsuario = obtenerCorreoUsuarioAutenticado();
 
         JPanel nuevoPanel = null;
 
@@ -192,11 +193,10 @@ public class MenuAlumno extends JFrame {
             case "Buscar por Título, Autor o Estado":
                 nuevoPanel = new BuscarPorTituloAutorEstado();
                 break;
-            case "Solicitar Préstamo":
-                nuevoPanel = new GestionPrestamos();
+            case "Mis prestamos":
+                nuevoPanel = new ConsultarPrestamos(correoUsuario);
                 break;
             case "Ver Historial de Préstamos":
-                String correoUsuario = obtenerCorreoUsuarioAutenticado();
                 nuevoPanel = new HistorialPrestamos(correoUsuario);
                 break;
             case "Ver Mora Pendiente":
@@ -221,6 +221,10 @@ public class MenuAlumno extends JFrame {
 
     private String obtenerCorreoUsuarioAutenticado() {
         return "alumno@colegio.com"; // Simulación de correo autenticado
+    }
+    
+    private String obtenerIDUsuario() {
+        return "AL00001"; // Simulación de correo autenticado
     }
 
     public static void main(String[] args) {

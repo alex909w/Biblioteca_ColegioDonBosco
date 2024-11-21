@@ -51,6 +51,17 @@ public class VerUsuarios extends JPanel {
         searchButton.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         searchButton.setBackground(new Color(51, 102, 153));
         searchButton.setForeground(Color.WHITE);
+        searchButton.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        searchButton.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                searchButton.setBackground(new Color(51, 102, 153).darker());
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                searchButton.setBackground(new Color(51, 102, 153));
+            }
+        });
+                        
         searchButton.addActionListener(e -> buscarUsuarios());
 
         // Añadir componentes al panel de búsqueda
