@@ -15,11 +15,16 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import javax.swing.border.EmptyBorder;
+import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
+import java.util.List;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 public class RegistrarDevolucion extends JPanel {
     private JTable prestamosTable; // Tabla de préstamos
     private DefaultTableModel tableModel; // Modelo de la tabla
-    private JTextField idPrestamoField, idDocumentoField; // Campos de texto
+    private JTextField idPrestamoField, idDocumentoField, fechaDevolucionField; // Campos de texto
     private JComboBox<String> estadoComboBox; // ComboBox para estado
     private JButton registrarButton; // Botón para registrar devolución
 
@@ -35,7 +40,7 @@ public class RegistrarDevolucion extends JPanel {
         )); // Borde del panel
 
         // Configuración de la tabla de préstamos
-        tableModel = new DefaultTableModel(new String[]{"ID Préstamo", "ID Documento", "Fecha Préstamo", "Estado"}, 0);
+        tableModel = new DefaultTableModel(new Object[]{"ID Préstamo", "ID Documento", "Fecha Préstamo", "Estado"}, 0);
         prestamosTable = new JTable(tableModel);
         prestamosTable.setFont(new Font("Arial", Font.PLAIN, 14));
         prestamosTable.setRowHeight(25);
@@ -80,9 +85,18 @@ public class RegistrarDevolucion extends JPanel {
         gbc.gridx = 1;
         formPanel.add(idDocumentoField, gbc); // Añadir campo
 
-        // Campo Estado del Documento
+        // Campo Fecha Real de Devolución
         gbc.gridx = 0;
         gbc.gridy = 2;
+        formPanel.add(createStyledLabel("Fecha Real de Devolución (YYYY-MM-DD):"), gbc); // Añadir etiqueta
+
+        fechaDevolucionField = createStyledTextField();
+        gbc.gridx = 1;
+        formPanel.add(fechaDevolucionField, gbc); // Añadir campo
+
+        // Campo Estado del Documento
+        gbc.gridx = 0;
+        gbc.gridy = 3;
         formPanel.add(createStyledLabel("Estado del Documento:"), gbc); // Añadir etiqueta
 
         estadoComboBox = createStyledComboBox(new String[]{"Bueno", "Dañado", "En Reparación"});
@@ -93,7 +107,7 @@ public class RegistrarDevolucion extends JPanel {
         registrarButton = createStyledButton("Registrar Devolución", new Color(34, 139, 34), new Color(0, 100, 0));
         registrarButton.addActionListener(e -> registrarDevolucion()); // Acción del botón
         gbc.gridx = 0;
-        gbc.gridy = 3;
+        gbc.gridy = 4;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         formPanel.add(registrarButton, gbc); // Añadir botón
@@ -142,140 +156,125 @@ public class RegistrarDevolucion extends JPanel {
         }
     }
 
-    private void registrarDevolucion() {
-        String idPrestamo = idPrestamoField.getText().trim(); // Obtener ID Préstamo
-        String idDocumento = idDocumentoField.getText().trim(); // Obtener ID Documento
-        String estadoDocumento = (String) estadoComboBox.getSelectedItem(); // Obtener estado
+ private void registrarDevolucion() {
+    String idPrestamoStr = idPrestamoField.getText().trim();
+    String idDocumento = idDocumentoField.getText().trim();
+    String estadoDocumento = (String) estadoComboBox.getSelectedItem();
+    String fechaDevolucionStr = fechaDevolucionField.getText().trim();
 
-        if (idPrestamo.isEmpty() || idDocumento.isEmpty()) { // Validar campos
-            JOptionPane.showMessageDialog(this, "Por favor, seleccione un préstamo para registrar la devolución.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+    if (idPrestamoStr.isEmpty() || idDocumento.isEmpty() || fechaDevolucionStr.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Por favor, complete todos los campos.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    LocalDate fechaDevolucion;
+    try {
+        fechaDevolucion = LocalDate.parse(fechaDevolucionStr, DateTimeFormatter.ISO_LOCAL_DATE);
+    } catch (DateTimeParseException e) {
+        JOptionPane.showMessageDialog(this, "Formato de fecha incorrecto. Use YYYY-MM-DD.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    try (Connection conn = ConexionBaseDatos.getConexion()) {
+        String detallesPrestamoQuery = "SELECT fecha_prestamo, fecha_devolucion, id_usuario FROM prestamos WHERE id = ?";
+        PreparedStatement detallesStmt = conn.prepareStatement(detallesPrestamoQuery);
+        detallesStmt.setInt(1, Integer.parseInt(idPrestamoStr));
+        ResultSet detallesRs = detallesStmt.executeQuery();
+
+        if (!detallesRs.next()) {
+            JOptionPane.showMessageDialog(this, "No se encontraron detalles del préstamo.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        try (Connection conn = ConexionBaseDatos.getConexion()) { // Conexión a BD
-            // Obtener detalles del préstamo
-            String detallesPrestamoQuery = "SELECT fecha_prestamo, fecha_devolucion, id_usuario FROM prestamos WHERE id = ?";
-            PreparedStatement detallesStmt = conn.prepareStatement(detallesPrestamoQuery);
-            detallesStmt.setString(1, idPrestamo);
-            ResultSet detallesRs = detallesStmt.executeQuery(); // Ejecutar consulta
+        LocalDate fechaDevolucionProgramada = detallesRs.getDate("fecha_devolucion").toLocalDate();
+        String idUsuario = detallesRs.getString("id_usuario");
 
-            if (!detallesRs.next()) { // Verificar existencia
-                JOptionPane.showMessageDialog(this, "No se encontraron detalles del préstamo seleccionado.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            java.sql.Date fechaPrestamoSql = detallesRs.getDate("fecha_prestamo");
-            java.sql.Date fechaDevolucionSql = detallesRs.getDate("fecha_devolucion");
-            String idUsuario = detallesRs.getString("id_usuario"); // Obtener ID Usuario
-
-            LocalDate fechaPrestamo = fechaPrestamoSql.toLocalDate();
-            LocalDate fechaDevolucion = fechaDevolucionSql.toLocalDate();
-            LocalDate fechaActual = LocalDate.now();
-
-            long diasPrestamo = ChronoUnit.DAYS.between(fechaPrestamo, fechaActual); // Calcular días prestado
-            long diasMora = 0;
-            if (fechaActual.isAfter(fechaDevolucion)) { // Calcular mora
-                diasMora = ChronoUnit.DAYS.between(fechaDevolucion, fechaActual);
-            }
-
-            // Obtener mora diaria desde configuraciones
-            double moraDiaria = obtenerMoraDiaria(conn); // Obtener mora diaria
-            double montoMora = diasMora * moraDiaria; // Calcular monto mora
-
-            String tipoDocumento = determinarTipoDocumento(idDocumento, conn); // Determinar tipo documento
-            if (tipoDocumento == null) { // Verificar tipo
-                JOptionPane.showMessageDialog(this, "No se pudo determinar el tipo de documento.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            String tablaEspecifica = obtenerTablaEspecifica(tipoDocumento, conn); // Obtener tabla específica
-            if (tablaEspecifica == null) { // Verificar tabla
-                JOptionPane.showMessageDialog(this, "No se encontró la tabla específica para el tipo de documento seleccionado.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            // Obtener detalles del libro
-            String libroQuery = "SELECT titulo, autor, cantidad_total, cantidad_disponible FROM " + tablaEspecifica + " WHERE id_libros = ?";
-            PreparedStatement libroStmt = conn.prepareStatement(libroQuery);
-            libroStmt.setString(1, idDocumento);
-            ResultSet libroRs = libroStmt.executeQuery(); // Ejecutar consulta
-
-            if (!libroRs.next()) { // Verificar existencia libro
-                JOptionPane.showMessageDialog(this, "No se encontró información del libro seleccionado.", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            String tituloLibro = libroRs.getString("titulo");
-            String autorLibro = libroRs.getString("autor");
-            int cantidadTotal = libroRs.getInt("cantidad_total");
-            int cantidadDisponible = libroRs.getInt("cantidad_disponible");
-
-            // Actualizar cantidad_disponible, asegurando que no exceda cantidad_total
-            int nuevaCantidadDisponible = cantidadDisponible + 1;
-            if (nuevaCantidadDisponible > cantidadTotal) {
-                nuevaCantidadDisponible = cantidadTotal;
-            }
-
-            // Actualizar la tabla específica del documento
-            String actualizarDocumentoQuery = "UPDATE " + tablaEspecifica + " SET cantidad_disponible = ?, estado = ? WHERE id_libros = ?";
-            PreparedStatement actualizarDocStmt = conn.prepareStatement(actualizarDocumentoQuery);
-            actualizarDocStmt.setInt(1, nuevaCantidadDisponible);
-            actualizarDocStmt.setString(2, estadoDocumento);
-            actualizarDocStmt.setString(3, idDocumento);
-            actualizarDocStmt.executeUpdate(); // Ejecutar actualización
-
-            // Actualizar estado del préstamo
-            String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Devuelto', dias_mora = ?, monto_mora = ?, fecha_devolucion_real = ? WHERE id = ?";
-            PreparedStatement actualizarPrestamoStmt = conn.prepareStatement(actualizarPrestamoQuery);
-            actualizarPrestamoStmt.setLong(1, diasMora);
-            actualizarPrestamoStmt.setDouble(2, montoMora);
-            actualizarPrestamoStmt.setDate(3, java.sql.Date.valueOf(fechaActual));
-            actualizarPrestamoStmt.setString(4, idPrestamo);
-            actualizarPrestamoStmt.executeUpdate(); // Ejecutar actualización
-
-            // Insertar registro en la tabla devoluciones
-            String insertarDevolucionQuery = "INSERT INTO devoluciones (id_prestamo, id_usuario, id_documento, fecha_devolucion_real, dias_mora, monto_mora) VALUES (?, ?, ?, ?, ?, ?)";
-            PreparedStatement insertarDevolucionStmt = conn.prepareStatement(insertarDevolucionQuery);
-            insertarDevolucionStmt.setString(1, idPrestamo);
-            insertarDevolucionStmt.setString(2, idUsuario);
-            insertarDevolucionStmt.setString(3, idDocumento);
-            insertarDevolucionStmt.setDate(4, java.sql.Date.valueOf(fechaActual));
-            insertarDevolucionStmt.setLong(5, diasMora);
-            insertarDevolucionStmt.setDouble(6, montoMora);
-            insertarDevolucionStmt.executeUpdate(); // Ejecutar inserción
-
-            // Insertar en historial_prestamos
-            String insertarHistorialQuery = "INSERT INTO historial_prestamos (id_prestamo, id_usuario, id_documento, accion, descripcion) VALUES (?, ?, ?, 'Devolución', ?)";
-            PreparedStatement insertarHistorialStmt = conn.prepareStatement(insertarHistorialQuery);
-            insertarHistorialStmt.setString(1, idPrestamo);
-            insertarHistorialStmt.setString(2, idUsuario);
-            insertarHistorialStmt.setString(3, idDocumento);
-            insertarHistorialStmt.setString(4, "Devolución del libro: " + tituloLibro);
-            insertarHistorialStmt.executeUpdate(); // Ejecutar inserción
-
-            // Insertar en auditoria
-            String usuarioActual = obtenerNombreUsuario(idUsuario, conn); // Obtener nombre usuario
-            String accion = "Registrar Devolución";
-            String descripcion = "Usuario " + usuarioActual + " devolvió el libro ID: " + idDocumento + ", Estado: " + estadoDocumento;
-            String insertarAuditoriaQuery = "INSERT INTO auditoria (usuario, accion, descripcion) VALUES (?, ?, ?)";
-            PreparedStatement insertarAuditoriaStmt = conn.prepareStatement(insertarAuditoriaQuery);
-            insertarAuditoriaStmt.setString(1, usuarioActual);
-            insertarAuditoriaStmt.setString(2, accion);
-            insertarAuditoriaStmt.setString(3, descripcion);
-            insertarAuditoriaStmt.executeUpdate(); // Ejecutar inserción
-
-            // Mostrar ventana de confirmación con detalles
-            mostrarConfirmacionDevolucion(idUsuario, usuarioActual, idDocumento, tituloLibro, autorLibro, diasPrestamo, diasMora, montoMora, estadoDocumento);
-
-            cargarPrestamos(); // Recargar préstamos
-        } catch (SQLException ex) { // Manejar excepciones SQL
-            JOptionPane.showMessageDialog(this, "Error al registrar devolución: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        } catch (Exception ex) { // Manejar otras excepciones
-            JOptionPane.showMessageDialog(this, "Ocurrió un error inesperado: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        long diasMora = 0;
+        if (fechaDevolucion.isAfter(fechaDevolucionProgramada)) {
+            diasMora = ChronoUnit.DAYS.between(fechaDevolucionProgramada, fechaDevolucion);
         }
-    }
 
-    private double obtenerMoraDiaria(Connection conn) throws SQLException {
+        double moraDiaria = obtenerMoraDiaria(conn);
+        double montoMora = diasMora * moraDiaria;
+
+        if (diasMora > 0) {
+            int respuesta = JOptionPane.showConfirmDialog(this,
+                    "El préstamo tiene mora de $" + String.format("%.2f", montoMora) + ".\n¿Desea pagar la mora ahora?",
+                    "Mora detectada",
+                    JOptionPane.YES_NO_OPTION);
+
+            if (respuesta == JOptionPane.YES_OPTION) {
+                pagarMora(conn, idPrestamoStr, montoMora); // Registrar el pago de la mora
+            } else {
+                // Actualizar el estado del préstamo a "Mora" sin devolver el libro
+                String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Mora', dias_mora = ?, monto_mora = ? WHERE id = ?";
+                PreparedStatement actualizarPrestamoStmt = conn.prepareStatement(actualizarPrestamoQuery);
+                actualizarPrestamoStmt.setLong(1, diasMora);
+                actualizarPrestamoStmt.setDouble(2, montoMora);
+                actualizarPrestamoStmt.setInt(3, Integer.parseInt(idPrestamoStr));
+                actualizarPrestamoStmt.executeUpdate();
+
+                JOptionPane.showMessageDialog(this, "El estado del préstamo permanece en Mora.\nLos días seguirán acumulándose.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                limpiarFormulario(); // Limpiar formulario
+                return; // Salir del método
+            }
+        }
+
+        // Insertar la devolución en la tabla `devoluciones`
+        String insertarDevolucionQuery = "INSERT INTO devoluciones (id_prestamo, id_usuario, id_documento, fecha_devolucion_real, dias_mora, monto_mora) VALUES (?, ?, ?, ?, ?, ?)";
+        PreparedStatement insertarDevolucionStmt = conn.prepareStatement(insertarDevolucionQuery);
+        insertarDevolucionStmt.setInt(1, Integer.parseInt(idPrestamoStr));
+        insertarDevolucionStmt.setString(2, idUsuario);
+        insertarDevolucionStmt.setString(3, idDocumento);
+        insertarDevolucionStmt.setDate(4, java.sql.Date.valueOf(fechaDevolucion));
+        insertarDevolucionStmt.setLong(5, diasMora);
+        insertarDevolucionStmt.setDouble(6, montoMora);
+        insertarDevolucionStmt.executeUpdate();
+
+        String tablaEspecifica = determinarTablaEspecificaPorIdDocumento(idDocumento, conn);
+        if (tablaEspecifica != null) {
+            String actualizarDocumentoQuery = "UPDATE " + tablaEspecifica + " SET cantidad_disponible = cantidad_disponible + 1, estado = ? WHERE id_libros = ?";
+            PreparedStatement actualizarDocStmt = conn.prepareStatement(actualizarDocumentoQuery);
+            actualizarDocStmt.setString(1, estadoDocumento);
+            actualizarDocStmt.setString(2, idDocumento);
+            actualizarDocStmt.executeUpdate();
+        }
+
+        String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Devuelto', dias_mora = ?, monto_mora = ? WHERE id = ?";
+        PreparedStatement actualizarPrestamoStmt = conn.prepareStatement(actualizarPrestamoQuery);
+        actualizarPrestamoStmt.setLong(1, diasMora);
+        actualizarPrestamoStmt.setDouble(2, montoMora);
+        actualizarPrestamoStmt.setInt(3, Integer.parseInt(idPrestamoStr));
+        actualizarPrestamoStmt.executeUpdate();
+
+        JOptionPane.showMessageDialog(this, "Devolución registrada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        cargarPrestamos(); // Recargar la tabla de préstamos pendientes
+        limpiarFormulario(); // Limpiar formulario
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al registrar devolución: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+
+private void pagarMora(Connection conn, String idPrestamoStr, double montoMora) throws SQLException {
+    // Registrar el pago de la mora (puedes personalizar esta lógica según tu base de datos)
+    String registrarPagoQuery = "INSERT INTO pagos_mora (id_prestamo, monto_pagado, fecha_pago) VALUES (?, ?, NOW())";
+    PreparedStatement registrarPagoStmt = conn.prepareStatement(registrarPagoQuery);
+    registrarPagoStmt.setInt(1, Integer.parseInt(idPrestamoStr));
+    registrarPagoStmt.setDouble(2, montoMora);
+    registrarPagoStmt.executeUpdate();
+
+    // Actualizar el estado del préstamo a "Devuelto"
+    String actualizarPrestamoQuery = "UPDATE prestamos SET estado = 'Devuelto', dias_mora = 0, monto_mora = 0 WHERE id = ?";
+    PreparedStatement actualizarPrestamoStmt = conn.prepareStatement(actualizarPrestamoQuery);
+    actualizarPrestamoStmt.setInt(1, Integer.parseInt(idPrestamoStr));
+    actualizarPrestamoStmt.executeUpdate();
+
+    JOptionPane.showMessageDialog(this, "La mora de $" + String.format("%.2f", montoMora) + " ha sido pagada.\nEl préstamo se ha registrado como Devuelto.", "Pago exitoso", JOptionPane.INFORMATION_MESSAGE);
+}
+
+
+ private double obtenerMoraDiaria(Connection conn) throws SQLException {
         String query = "SELECT valor FROM configuraciones WHERE clave = 'mora_diaria'";
         PreparedStatement stmt = conn.prepareStatement(query);
         ResultSet rs = stmt.executeQuery();
@@ -285,26 +284,29 @@ public class RegistrarDevolucion extends JPanel {
         return 1.50; // Valor por defecto
     }
 
-    private String determinarTipoDocumento(String idDocumento, Connection conn) throws SQLException {
-    String query = "SELECT nombre FROM tipos_documentos WHERE nombre LIKE ?";
-    PreparedStatement stmt = conn.prepareStatement(query);
-    stmt.setString(1, idDocumento + "%");
-    ResultSet rs = stmt.executeQuery();
-    if (rs.next()) {
-        return rs.getString("nombre");
-    }
-    return null;
-}
+    private String determinarTablaEspecificaPorIdDocumento(String idDocumento, Connection conn) throws SQLException {
+        String tablaEspecifica = null;
+        String obtenerTablasQuery = "SELECT nombre FROM tipos_documentos";
+        PreparedStatement obtenerTablasStmt = conn.prepareStatement(obtenerTablasQuery);
+        ResultSet tablasRs = obtenerTablasStmt.executeQuery();
 
-    private String obtenerTablaEspecifica(String tipoDocumento, Connection conexion) throws SQLException {
-        String query = "SELECT nombre_tabla FROM tipos_documentos WHERE tipo = ?";
-        PreparedStatement stmt = conexion.prepareStatement(query);
-        stmt.setString(1, tipoDocumento);
-        ResultSet rs = stmt.executeQuery();
-        if (rs.next()) {
-            return rs.getString("nombre_tabla"); // Retornar tabla específica
+        List<String> tablas = new ArrayList<>();
+        while (tablasRs.next()) {
+            tablas.add(tablasRs.getString("nombre").toLowerCase()); // Añadir nombres de tablas
         }
-        return null;
+
+        for (String tabla : tablas) {
+            String verificarDocumentoQuery = "SELECT COUNT(*) FROM " + tabla + " WHERE id_libros = ?";
+            PreparedStatement verificarDocumentoStmt = conn.prepareStatement(verificarDocumentoQuery);
+            verificarDocumentoStmt.setString(1, idDocumento);
+            ResultSet verificarRs = verificarDocumentoStmt.executeQuery();
+            if (verificarRs.next() && verificarRs.getInt(1) > 0) {
+                tablaEspecifica = tabla; // Tabla encontrada
+                break;
+            }
+        }
+
+        return tablaEspecifica; // Retornar tabla específica
     }
 
     private String obtenerNombreUsuario(String idUsuario, Connection conn) throws SQLException {
@@ -320,7 +322,7 @@ public class RegistrarDevolucion extends JPanel {
 
     private void mostrarConfirmacionDevolucion(String idUsuario, String nombreUsuario, String idDocumento, String tituloLibro, String autorLibro, long diasPrestamo, long diasMora, double montoMora, String estadoDocumento) {
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Confirmación de Devolución", true); // Crear diálogo
-        dialog.setSize(500, 400);
+        dialog.setSize(600, 500);
         dialog.setLayout(new BorderLayout(10, 10));
         dialog.setLocationRelativeTo(this); // Posicionar ventana
 
@@ -421,4 +423,13 @@ public class RegistrarDevolucion extends JPanel {
         comboBox.setBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 1)); // Borde
         return comboBox; // Retornar ComboBox
     }
+    
+    private void limpiarFormulario() {
+    idPrestamoField.setText(""); // Limpiar ID Préstamo
+    idDocumentoField.setText(""); // Limpiar ID Documento
+    fechaDevolucionField.setText(""); // Limpiar Fecha de Devolución
+    estadoComboBox.setSelectedIndex(0); // Restablecer el comboBox al primer valor
+    prestamosTable.clearSelection(); // Deseleccionar cualquier fila de la tabla
+}
+
 }
