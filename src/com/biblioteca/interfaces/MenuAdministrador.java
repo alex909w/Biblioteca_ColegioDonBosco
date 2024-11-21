@@ -35,7 +35,7 @@ public class MenuAdministrador extends JFrame {
 
     public MenuAdministrador() {
         setTitle("Menú Principal: Administrador");
-        setSize(1000, 700);
+        setSize(1200, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         add(crearPanelSuperior(), BorderLayout.NORTH);
