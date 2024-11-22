@@ -1,6 +1,6 @@
 package com.biblioteca.controller;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.basedatos.ConexionBaseDatos;
 import com.biblioteca.dao.DocumentoDAO;
 
 import java.sql.Connection;

@@ -1,6 +1,6 @@
 package com.biblioteca.Panel.Prestamos;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.basedatos.ConexionBaseDatos;
 import com.biblioteca.controller.PrestamoController;
 import com.biblioteca.dao.UsuarioDAO;
 import com.biblioteca.dao.DocumentoDAO;
@@ -9,7 +9,10 @@ import com.biblioteca.modelos.Usuario;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,14 +20,26 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Arrays;
+import java.util.ArrayList;
+import javax.swing.table.TableCellRenderer;
 
 /**
  * Clase para gestionar los préstamos.
  */
 public class GestionPrestamos extends JPanel {
 
+    private static final List<String> ORDEN_COLUMNAS = Arrays.asList(
+        "id_libros", "Título", "Autor(es)", "Categoría", "Fecha_de_Publicación",
+        "Editorial", "ISBN", "Edición", "Idioma", "Sinopsis",
+        "ubicacion_fisica", "cantidad_disponible", "cantidad_total",
+        "estado", "palabras_clave"
+    );
+
     private String emailUsuario; // Almacenar el correo del usuario autenticado
     private JTable tablaLibros;
+    private DefaultTableModel tableModel;
     private JComboBox<String> tiposDocumentosComboBox;
     private JComboBox<Integer> diasPrestamoComboBox;
     private JButton buscarButton;
@@ -35,6 +50,7 @@ public class GestionPrestamos extends JPanel {
     private PrestamoController prestamoController;
     private UsuarioDAO usuarioDAO;
     private DocumentoDAO documentoDAO;
+    private int diasPrestamo;
 
     public GestionPrestamos(String emailUsuario) {
         this.emailUsuario = emailUsuario;
@@ -42,19 +58,17 @@ public class GestionPrestamos extends JPanel {
         usuarioDAO = new UsuarioDAO();
         documentoDAO = new DocumentoDAO();
 
-        setLayout(new BorderLayout(15, 15));
-
-        // Estilo general
+        setLayout(new BorderLayout(20, 20));
         setBackground(new Color(240, 240, 240));
 
-        // Contenedor para las etiquetas de información y el panel superior
+        // Panel Norte: Información del Usuario y Búsqueda de Documentos
         JPanel panelNorth = new JPanel();
         panelNorth.setLayout(new BoxLayout(panelNorth, BoxLayout.Y_AXIS));
         panelNorth.setBackground(new Color(240, 240, 240));
 
         // Obtener información del usuario autenticado
         Usuario usuarioAutenticado = obtenerUsuarioAutenticado();
-        String rolUsuario = usuarioAutenticado.getRol();
+        String rolUsuario = (usuarioAutenticado != null) ? usuarioAutenticado.getRol() : "Desconocido";
 
         // Etiqueta superior: Información del Usuario
         infoLabel = createStyledLabel("Préstamos gestionados por: " + emailUsuario);
@@ -66,79 +80,183 @@ public class GestionPrestamos extends JPanel {
         rolLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panelNorth.add(rolLabel);
 
-        // Panel Superior: Búsqueda de Tipo de Documento
-        JPanel panelSuperior = new JPanel(new GridLayout(1, 1, 10, 10));
-        panelSuperior.setBorder(new EmptyBorder(10, 10, 10, 10)); // Agregar margen alrededor
-        panelSuperior.setBackground(new Color(240, 240, 240)); // Fondo blanco
+        // Panel de Búsqueda de Tipo de Documento
+        JPanel panelBusqueda = new JPanel();
+        panelBusqueda.setLayout(new BoxLayout(panelBusqueda, BoxLayout.X_AXIS));
+        panelBusqueda.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
+                "Buscar Documentos",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 14),
+                new Color(70, 130, 180)
+        ));
+        panelBusqueda.setBackground(new Color(255, 255, 255));
 
-        // Crear un subpanel para alinear los componentes en una fila
-        JPanel fila1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        fila1.setBackground(new Color(240, 240, 240));
+        // Etiqueta Tipo de Documento
+        JLabel tipoDocLabel = new JLabel("Tipo de Documento:");
+        tipoDocLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        tipoDocLabel.setForeground(new Color(70, 130, 180));
+        panelBusqueda.add(Box.createRigidArea(new Dimension(10, 0)));
+        panelBusqueda.add(tipoDocLabel);
+        panelBusqueda.add(Box.createRigidArea(new Dimension(10, 0)));
 
-        // Crear y configurar los componentes
-        JLabel etiquetaTipoDocumento = new JLabel("Tipo de Documento:");
-        etiquetaTipoDocumento.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        etiquetaTipoDocumento.setForeground(Color.BLACK);
-
+        // ComboBox Tipos de Documentos
         tiposDocumentosComboBox = new JComboBox<>();
-        tiposDocumentosComboBox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        tiposDocumentosComboBox.setPreferredSize(new Dimension(200, 30));
+        tiposDocumentosComboBox.setPreferredSize(new Dimension(200, 25));
+        panelBusqueda.add(tiposDocumentosComboBox);
+        panelBusqueda.add(Box.createRigidArea(new Dimension(20, 0)));
 
+        // Botón Buscar Documentos
         buscarButton = new JButton("Buscar Documentos");
-        buscarButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        buscarButton.setBackground(new Color(51, 102, 153)); // Azul
-        buscarButton.setForeground(Color.WHITE); // Texto blanco
+        buscarButton.setBackground(new Color(70, 130, 180));
+        buscarButton.setForeground(Color.WHITE);
+        buscarButton.setFocusPainted(false);
+        buscarButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        buscarButton.setFont(new Font("Arial", Font.BOLD, 14));
+        buscarButton.setPreferredSize(new Dimension(180, 30));
+        panelBusqueda.add(buscarButton);
+        panelBusqueda.add(Box.createRigidArea(new Dimension(10, 0)));
 
-        // Agregar los componentes al subpanel
-        fila1.add(etiquetaTipoDocumento);
-        fila1.add(tiposDocumentosComboBox);
-        fila1.add(buscarButton);
-
-        panelSuperior.add(fila1);
-        panelNorth.add(panelSuperior);
+        panelNorth.add(Box.createRigidArea(new Dimension(0, 10)));
+        panelNorth.add(panelBusqueda);
+        panelNorth.add(Box.createRigidArea(new Dimension(0, 10)));
 
         add(panelNorth, BorderLayout.NORTH);
 
         // Panel Central: Tabla de Documentos Disponibles
-        tablaLibros = new JTable();
-        tablaLibros.setFillsViewportHeight(true); // Rellenar todo el área visible
-        tablaLibros.setRowHeight(30); // Altura de filas
-        tablaLibros.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 14));
-        tablaLibros.getTableHeader().setBackground(new Color(200, 200, 200));
-        tablaLibros.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        tableModel = new DefaultTableModel();
+        tablaLibros = new JTable(tableModel);
+        tablaLibros.setFont(new Font("Arial", Font.PLAIN, 14));
+        tablaLibros.setRowHeight(25);
+        tablaLibros.setFillsViewportHeight(true);
+        tablaLibros.getTableHeader().setReorderingAllowed(false);
+
+        // Personalizar el encabezado de la tabla
+        tablaLibros.getTableHeader().setBackground(new Color(70, 130, 180));
+        tablaLibros.getTableHeader().setForeground(Color.WHITE);
+        tablaLibros.getTableHeader().setFont(new Font("Arial", Font.BOLD, 14));
+
+        // Configurar selección de filas
+        tablaLibros.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); // Selección de una sola fila
+        tablaLibros.setRowSelectionAllowed(true);
+        tablaLibros.setColumnSelectionAllowed(false);
+        tablaLibros.setSelectionBackground(new Color(70, 130, 180)); // Azul Steel
+        tablaLibros.setSelectionForeground(Color.WHITE); // Texto en blanco cuando está seleccionado
+
+        // Alternar colores de filas y mantener color de selección en azul
+        tablaLibros.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            private final Color COLOR_BASE_PAR = new Color(245, 245, 245);
+            private final Color COLOR_BASE_IMPAR = new Color(255, 255, 255);
+            private final Color COLOR_SELECCION = new Color(70, 130, 180); // Azul Steel
+
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                                                           boolean isSelected, boolean hasFocus,
+                                                           int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                
+                if (isSelected) {
+                    c.setBackground(COLOR_SELECCION);
+                    c.setForeground(Color.WHITE); // Texto en blanco para mejor legibilidad
+                } else {
+                    if (row % 2 == 0) {
+                        c.setBackground(COLOR_BASE_PAR);
+                    } else {
+                        c.setBackground(COLOR_BASE_IMPAR);
+                    }
+                    c.setForeground(Color.BLACK); // Texto en negro para filas no seleccionadas
+                }
+                
+                setHorizontalAlignment(SwingConstants.CENTER);
+                setFont(new Font("Arial", Font.PLAIN, 14));
+                return c;
+            }
+        });
+
+        // Configurar el TableRowSorter para permitir la ordenación de columnas
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(tableModel);
+        tablaLibros.setRowSorter(sorter);
+
+        // Opcional: Deshabilitar la ordenación para columnas específicas si es necesario
+        // Por ejemplo, deshabilitar la ordenación para la columna 'Sinopsis' si es muy larga
+        int sinopsisIndex = getColumnIndex(tablaLibros, "Sinopsis");
+        if (sinopsisIndex != -1) {
+            sorter.setSortable(sinopsisIndex, false);
+        }
+
+        // Asegurar que no haya ninguna ordenación aplicada inicialmente
+        sorter.setSortsOnUpdates(true);
+        sorter.setSortKeys(null); // No aplicar ninguna ordenación por defecto
 
         JScrollPane scrollPane = new JScrollPane(tablaLibros);
-        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1));
+        scrollPane.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(Color.GRAY),
+                "Documentos Disponibles",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 14),
+                Color.DARK_GRAY
+        ));
         add(scrollPane, BorderLayout.CENTER);
 
         // Panel Inferior: Registro de Préstamos
         JPanel panelInferior = new JPanel();
-        panelInferior.setLayout(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        panelInferior.setLayout(new BoxLayout(panelInferior, BoxLayout.X_AXIS));
+        panelInferior.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
+                "Registrar Préstamo",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Arial", Font.BOLD, 14),
+                new Color(70, 130, 180)
+        ));
         panelInferior.setBackground(new Color(255, 255, 255));
+        panelInferior.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
 
+        // Etiqueta Días de Préstamo
+        JLabel diasLabel = new JLabel("Días de Préstamo:");
+        diasLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        diasLabel.setForeground(new Color(70, 130, 180));
+        diasLabel.setAlignmentY(Component.CENTER_ALIGNMENT);
+        panelInferior.add(Box.createRigidArea(new Dimension(10, 0)));
+        panelInferior.add(diasLabel);
+        panelInferior.add(Box.createRigidArea(new Dimension(10, 0)));
+
+        // ComboBox Días de Préstamo
         diasPrestamoComboBox = new JComboBox<>();
-        registrarButton = new JButton("Registrar Préstamo");
+        diasPrestamoComboBox.setPreferredSize(new Dimension(100, 25));
+        diasPrestamoComboBox.setMaximumSize(new Dimension(150, 25));
+        panelInferior.add(diasPrestamoComboBox);
+        panelInferior.add(Box.createHorizontalGlue()); // Empuja el botón hacia la derecha
 
-        registrarButton.setBackground(new Color(51, 102, 153));
+        // Botón Registrar Préstamo
+        registrarButton = new JButton("Registrar Préstamo");
+        registrarButton.setBackground(new Color(34, 139, 34));
         registrarButton.setForeground(Color.WHITE);
         registrarButton.setFocusPainted(false);
-        registrarButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
-
-        panelInferior.add(new JLabel("Días de Préstamo:"));
-        panelInferior.add(diasPrestamoComboBox);
+        registrarButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        registrarButton.setFont(new Font("Arial", Font.BOLD, 14));
+        registrarButton.setPreferredSize(new Dimension(180, 30));
         panelInferior.add(registrarButton);
+        panelInferior.add(Box.createRigidArea(new Dimension(10, 0)));
 
         add(panelInferior, BorderLayout.SOUTH);
 
-        // Cargar nombres de tablas desde tipos_documentos
+        // Cargar tipos de documentos y días de préstamo según el rol
         cargarTablasDesdeTiposDocumentos();
-        cargarDiasPrestamoPorRol(usuarioAutenticado.getRol().toLowerCase());
+        cargarDiasPrestamoPorRol(usuarioAutenticado != null ? usuarioAutenticado.getRol().toLowerCase() : "desconocido");
 
         // Eventos
         buscarButton.addActionListener(e -> buscarLibros());
         registrarButton.addActionListener(e -> registrarPrestamo(usuarioAutenticado));
     }
 
+    /**
+     * Obtiene el usuario autenticado basado en el correo electrónico.
+     *
+     * @return Objeto Usuario.
+     */
     private Usuario obtenerUsuarioAutenticado() {
         try {
             return usuarioDAO.obtenerUsuarioPorEmail(emailUsuario);
@@ -148,6 +266,11 @@ public class GestionPrestamos extends JPanel {
         }
     }
 
+    /**
+     * Carga los días de préstamo permitidos según el rol del usuario.
+     *
+     * @param rolUsuario Rol del usuario.
+     */
     private void cargarDiasPrestamoPorRol(String rolUsuario) {
         try {
             int limiteDias = prestamoController.obtenerLimitePrestamosPorRol(rolUsuario);
@@ -160,6 +283,9 @@ public class GestionPrestamos extends JPanel {
         }
     }
 
+    /**
+     * Carga los tipos de documentos disponibles desde la base de datos.
+     */
     private void cargarTablasDesdeTiposDocumentos() {
         try {
             List<String> tiposDocumentos = documentoDAO.obtenerNombresTablas();
@@ -167,123 +293,195 @@ public class GestionPrestamos extends JPanel {
                 tiposDocumentosComboBox.addItem(tipo);
             }
         } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al cargar tipos de documentos: " + e.getMessage());
+            JOptionPane.showMessageDialog(this, "Error al cargar tipos de documentos: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    /**
+     * Busca y carga los documentos disponibles del tipo seleccionado.
+     */
     private void buscarLibros() {
-    String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
+        String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
 
-    if (tipoDocumento == null) {
-        JOptionPane.showMessageDialog(this, "Seleccione una tabla de tipo de documento.");
-        return;
-    }
-
-    try {
-        // Obtén el nombre dinámico del ID
-        String nombreColumnaID = obtenerNombreColumnaID(tipoDocumento);
-
-        List<Map<String, Object>> documentos = documentoDAO.obtenerTodosLosDocumentos(tipoDocumento);
-
-        // Obtener el modelo de la tabla y limpiarlo antes de insertar nuevos datos
-        DefaultTableModel modeloTabla = new DefaultTableModel();
-        tablaLibros.setModel(modeloTabla);
-
-        if (!documentos.isEmpty()) {
-            Map<String, Object> firstRow = documentos.get(0);
-            for (String columnName : firstRow.keySet()) {
-                modeloTabla.addColumn(columnName);
-            }
-
-            for (Map<String, Object> doc : documentos) {
-                Object[] rowData = doc.values().toArray();
-                modeloTabla.addRow(rowData);
-            }
-        } else {
-            JOptionPane.showMessageDialog(this, "No hay documentos disponibles.");
-        }
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar datos de la tabla seleccionada: " + e.getMessage());
-    }
-}
-
-
-   private void registrarPrestamo(Usuario usuarioAutenticado) {
-    int filaSeleccionada = tablaLibros.getSelectedRow();
-    if (filaSeleccionada == -1) {
-        JOptionPane.showMessageDialog(this, "Seleccione un documento para registrar el préstamo.");
-        return;
-    }
-
-    String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
-    if (tipoDocumento == null || tipoDocumento.trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento válido.");
-        return;
-    }
-
-    try {
-        // Obtén el nombre dinámico del ID
-        String nombreColumnaID = obtenerNombreColumnaID(tipoDocumento);
-
-        String idDocumento = tablaLibros.getValueAt(filaSeleccionada, getColumnIndex(nombreColumnaID)).toString();
-        String cantidadDisponibleStr = tablaLibros.getValueAt(filaSeleccionada, getColumnIndex("cantidad_disponible")).toString();
-        int cantidadDisponible = Integer.parseInt(cantidadDisponibleStr);
-
-        if (cantidadDisponible <= 0) {
-            JOptionPane.showMessageDialog(this, "No hay suficientes copias disponibles para realizar el préstamo.");
+        if (tipoDocumento == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
+        try {
+            // Obtén el nombre dinámico del ID
+            String nombreColumnaID = obtenerNombreColumnaID(tipoDocumento);
 
-        // Validar límite de préstamos por rol
-        int limitePrestamos = prestamoController.obtenerLimitePrestamosPorRol(usuarioAutenticado.getRol().toLowerCase());
-        boolean puedePrestar = prestamoController.validarLimitePrestamos(usuarioAutenticado.getId(), limitePrestamos);
-        if (!puedePrestar) {
-            JOptionPane.showMessageDialog(this, "El usuario ha alcanzado el límite de préstamos permitidos para su rol.");
+            List<Map<String, Object>> documentos = documentoDAO.obtenerTodosLosDocumentos(tipoDocumento);
+
+            // Obtener el modelo de la tabla y limpiarlo antes de insertar nuevos datos
+            DefaultTableModel modeloTabla = (DefaultTableModel) tablaLibros.getModel();
+            modeloTabla.setRowCount(0); // Limpiar filas
+            modeloTabla.setColumnCount(0); // Limpiar columnas
+
+            if (!documentos.isEmpty()) {
+                // Crear un mapa de columnas disponibles en los datos
+                Set<String> columnasDisponibles = documentos.get(0).keySet();
+
+                // Añadir las columnas al modelo en el orden definido
+                for (String columna : ORDEN_COLUMNAS) {
+                    if (columnasDisponibles.contains(columna)) {
+                        modeloTabla.addColumn(columna);
+                    }
+                }
+
+                // Añadir las columnas que no están en el orden predeterminado pero existen en los datos
+                for (String columna : columnasDisponibles) {
+                    if (!ORDEN_COLUMNAS.contains(columna)) {
+                        modeloTabla.addColumn(columna);
+                    }
+                }
+
+                // Añadir las filas en el orden de las columnas
+                for (Map<String, Object> doc : documentos) {
+                    List<Object> rowData = new ArrayList<>();
+                    for (int i = 0; i < modeloTabla.getColumnCount(); i++) {
+                        String columna = modeloTabla.getColumnName(i);
+                        rowData.add(doc.get(columna));
+                    }
+                    modeloTabla.addRow(rowData.toArray());
+                }
+
+                // Ajustar el ancho de las columnas según el contenido
+                ajustarAnchoColumnas(tablaLibros);
+            } else {
+                JOptionPane.showMessageDialog(this, "No hay documentos disponibles para el tipo seleccionado.", "Información", JOptionPane.INFORMATION_MESSAGE);
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar datos de la tabla seleccionada: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Registra un préstamo para el documento seleccionado.
+     *
+     * @param usuarioAutenticado Usuario que realiza el préstamo.
+     */
+    private void registrarPrestamo(Usuario usuarioAutenticado) {
+        if (usuarioAutenticado == null) {
+            JOptionPane.showMessageDialog(this, "No se pudo obtener la información del usuario.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Obtener mora diaria
-        double moraDiaria = prestamoController.obtenerMoraDiariaPorRol(usuarioAutenticado.getRol().toLowerCase());
+        int filaSeleccionada = tablaLibros.getSelectedRow();
+        if (filaSeleccionada == -1) {
+            JOptionPane.showMessageDialog(this, "Seleccione un documento para registrar el préstamo.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-        // Registrar el préstamo
-        Prestamo prestamo = new Prestamo();
-        prestamo.setIdUsuario(usuarioAutenticado.getId());
-        prestamo.setIdDocumento(idDocumento);
-        prestamo.setMoraDiaria(moraDiaria);
-        prestamo.setDiasMora(diasPrestamo); // Usando diasMora para almacenar los días de préstamo
+        String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
+        if (tipoDocumento == null || tipoDocumento.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento válido.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-        prestamoController.registrarPrestamo(prestamo);
+        try {
+            // Obtén el nombre dinámico del ID
+            String nombreColumnaID = obtenerNombreColumnaID(tipoDocumento);
 
-        // Actualizar cantidad disponible
-        prestamoController.actualizarDisponibilidadDocumento(tipoDocumento, idDocumento, -1);
+            // Convertir el índice de fila filtrado a índice de modelo
+            int modelRow = tablaLibros.convertRowIndexToModel(filaSeleccionada);
+            String idDocumento = tablaLibros.getModel().getValueAt(modelRow, getColumnIndex(tablaLibros, nombreColumnaID)).toString();
+            String cantidadDisponibleStr = tablaLibros.getModel().getValueAt(modelRow, getColumnIndex(tablaLibros, "cantidad_disponible")).toString();
+            int cantidadDisponible = Integer.parseInt(cantidadDisponibleStr);
 
-        JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.");
+            if (cantidadDisponible <= 0) {
+                JOptionPane.showMessageDialog(this, "No hay suficientes copias disponibles para realizar el préstamo.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
 
-        // Recargar la tabla para reflejar los cambios
-        buscarLibros();
+            int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
 
-    } catch (NumberFormatException e) {
-        JOptionPane.showMessageDialog(this, "La cantidad disponible no es válida. Verifique los datos del documento.");
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage());
+            // Validar límite de préstamos por rol
+            int limitePrestamos = prestamoController.obtenerLimitePrestamosPorRol(usuarioAutenticado.getRol().toLowerCase());
+            boolean puedePrestar = prestamoController.validarLimitePrestamos(usuarioAutenticado.getId(), limitePrestamos);
+            if (!puedePrestar) {
+                JOptionPane.showMessageDialog(this, "El usuario ha alcanzado el límite de préstamos permitidos para su rol.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            // Obtener mora diaria
+            double moraDiaria = prestamoController.obtenerMoraDiariaPorRol(usuarioAutenticado.getRol().toLowerCase());
+
+            // Registrar el préstamo
+            Prestamo prestamo = new Prestamo();
+            prestamo.setIdUsuario(usuarioAutenticado.getId());
+            prestamo.setIdDocumento(idDocumento);
+            prestamo.setMoraDiaria(moraDiaria);
+            prestamo.setDiasPrestamo(diasPrestamo);
+
+            prestamoController.registrarPrestamo(prestamo);
+
+            // Actualizar cantidad disponible
+            prestamoController.actualizarDisponibilidadDocumento(tipoDocumento, idDocumento, -1);
+
+            JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+
+            // Recargar la tabla para reflejar los cambios
+            buscarLibros();
+
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "La cantidad disponible no es válida. Verifique los datos del documento.", "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
+    
+    public void setDiasPrestamo(int diasPrestamo) {
+    if (diasPrestamo <= 0) {
+        throw new IllegalArgumentException("Los días de préstamo deben ser mayores que cero.");
+    }
+    this.diasPrestamo = diasPrestamo;
 }
 
 
-    private int getColumnIndex(String columnName) {
-        for (int i = 0; i < tablaLibros.getColumnCount(); i++) {
-            if (tablaLibros.getColumnName(i).equalsIgnoreCase(columnName)) {
+    /**
+     * Obtiene el índice de una columna en la tabla basada en su nombre.
+     *
+     * @param table      JTable donde buscar.
+     * @param columnName Nombre de la columna.
+     * @return Índice de la columna, o -1 si no se encuentra.
+     */
+    private int getColumnIndex(JTable table, String columnName) {
+        for (int i = 0; i < table.getColumnCount(); i++) {
+            if (table.getColumnName(i).equalsIgnoreCase(columnName)) {
                 return i;
             }
         }
         return -1;
     }
 
-    // Método auxiliar para crear una etiqueta estilizada.
-  
+    /**
+     * Ajusta el ancho de las columnas de una tabla según el contenido.
+     *
+     * @param table JTable cuya columnas se ajustarán.
+     */
+    private void ajustarAnchoColumnas(JTable table) {
+        for (int column = 0; column < table.getColumnCount(); column++) {
+            int width = 15; // Valor por defecto
+            for (int row = 0; row < table.getRowCount(); row++) {
+                TableCellRenderer renderer = table.getCellRenderer(row, column);
+                Component comp = table.prepareRenderer(renderer, row, column);
+                width = Math.max(comp.getPreferredSize().width + 1, width);
+            }
+            if (width > 300)
+                width = 300;
+            table.getColumnModel().getColumn(column).setPreferredWidth(width);
+        }
+    }
+
+    /**
+     * Crea una etiqueta con estilo personalizado.
+     *
+     * @param text Texto de la etiqueta.
+     * @return JLabel con estilo.
+     */
     private JLabel createStyledLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Arial", Font.BOLD, 14));
@@ -291,20 +489,25 @@ public class GestionPrestamos extends JPanel {
         return label;
     }
 
+    /**
+     * Obtiene el nombre de la columna ID de una tabla específica.
+     *
+     * @param tabla Nombre de la tabla.
+     * @return Nombre de la columna ID.
+     * @throws SQLException Si ocurre un error en la base de datos.
+     */
     private String obtenerNombreColumnaID(String tabla) throws SQLException {
-    String sql = "DESCRIBE " + tabla;
-    try (Connection conexion = ConexionBaseDatos.getConexion();
-         PreparedStatement stmt = conexion.prepareStatement(sql);
-         ResultSet rs = stmt.executeQuery()) {
-        while (rs.next()) {
-            String columna = rs.getString("Field");
-            if (columna.toLowerCase().startsWith("id_")) {
-                return columna; // Retorna la columna que empieza con "id_"
+        String sql = "DESCRIBE " + tabla;
+        try (Connection conexion = ConexionBaseDatos.getConexion();
+             PreparedStatement stmt = conexion.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                String columna = rs.getString("Field");
+                if (columna.toLowerCase().startsWith("id_")) {
+                    return columna; // Retorna la columna que empieza con "id_"
+                }
             }
         }
+        throw new SQLException("No se encontró ninguna columna que comience con 'id_' en la tabla: " + tabla);
     }
-    throw new SQLException("No se encontró ninguna columna que comience con 'id_' en la tabla: " + tabla);
-}
-    
-    
 }

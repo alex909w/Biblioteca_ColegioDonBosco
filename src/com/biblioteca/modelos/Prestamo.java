@@ -17,6 +17,7 @@ public class Prestamo {
     private String estado;
     private int diasMora;
     private BigDecimal montoMora;
+    private int diasPrestamo;
 
     // Constructor vacío
     public Prestamo() {
@@ -104,4 +105,14 @@ public class Prestamo {
     public void setMontoMora(BigDecimal montoMora) {
         this.montoMora = montoMora;
     }
+
+    public int getDiasPrestamo() {
+    return diasPrestamo;
+}
+
+    public void setDiasPrestamo(int diasPrestamo) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    
 }
