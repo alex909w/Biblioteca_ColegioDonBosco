@@ -9,20 +9,26 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.border.TitledBorder;
 
+// Clase que representa un panel para crear formularios dinámicos con campos y tablas.
 public class CrearFormulario extends JPanel {
     private JTextField nombreTablaField;
     private JTextField numeroColumnasField;
     private JPanel columnasPanel;
     private JButton generarColumnasButton, crearTablaButton;
 
+    // Permite al usuario ingresar el nombre de la tabla y el número de columnas.
     private final Color botonCrearTabla = new Color(255, 69, 0); // Orange Red
     private final Color botonCrearTablaHover = new Color(178, 34, 34); // Firebrick
     private final Color botonGenerarCampos = new Color(34, 139, 34); // Forest Green
     private final Color botonGenerarCamposHover = new Color(0, 100, 0); // Dark Green
 
+    // generar los campos dinámicos y crear la tabla en la base de datos.
     private List<JTextField> camposDinamicos = new ArrayList<>();
     private FormularioController formularioController = new FormularioController();
 
+    // Constructor de la clase CrearFormulario. Configura el panel con un diseño de BorderLayout,
+// establece un borde con título personalizado y define la apariencia del título y bordes.
+    
     public CrearFormulario() {
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createTitledBorder(
@@ -101,11 +107,13 @@ public class CrearFormulario extends JPanel {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
+    // Método que genera dinámicamente los campos de columna basados en la cantidad ingresada.
     private void generarCampos() {
         columnasPanel.removeAll();
         camposDinamicos.clear();
         crearTablaButton.setEnabled(false);
 
+        // Verifica que el nombre del formulario no esté vacío y que no exista en la base de datos.
         String nombreTabla = nombreTablaField.getText().trim();
         if (nombreTabla.isEmpty()) {
             JOptionPane.showMessageDialog(this, "El nombre del formulario no puede estar vacío.");
@@ -148,6 +156,7 @@ public class CrearFormulario extends JPanel {
                 columnasPanel.add(Box.createRigidArea(new Dimension(0, 10)));
             }
 
+            // Luego, genera los campos de texto para cada columna y habilita el botón para crear la tabla.
             crearTablaButton.setEnabled(true);
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this, "Por favor, ingrese un número válido para las columnas.");
@@ -157,19 +166,24 @@ public class CrearFormulario extends JPanel {
         columnasPanel.repaint();
     }
 
+    // Método para crear una nueva tabla en la base de datos con las columnas definidas por el usuario.
     private void crearTabla() {
         String nombreTabla = nombreTablaField.getText().trim();
+        
+        // Realiza varias validaciones: que el nombre del formulario y las columnas no estén vacíos,
         if (nombreTabla.isEmpty()) {
             JOptionPane.showMessageDialog(this, "El nombre del formulario no puede estar vacío.");
             return;
         }
-
+        
+// que los nombres sean válidos y que no contengan caracteres no permitidos.
         if (!nombreTabla.matches("[a-zA-Z0-9_ ]+")) {
             JOptionPane.showMessageDialog(this, "El nombre del formulario debe contener solo letras, números, espacios o guiones bajos.",
                     "Error en el nombre", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
+        // Luego, llama al controlador para crear la tabla en la base de datos y limpia los campos tras el éxito.
         String nombreTablaDB = sanitizeName(nombreTabla);
         List<String> nombresColumnas = new ArrayList<>();
         for (JTextField campo : camposDinamicos) {
@@ -202,50 +216,61 @@ public class CrearFormulario extends JPanel {
         }
     }
 
+    // Método para sanitizar el nombre de la tabla, eliminando espacios en blanco adicionales 
+// y reemplazando los espacios por guiones bajos ('_'). Esto asegura que el nombre sea adecuado 
+// para ser utilizado en una base de datos.
+    
     private String sanitizeName(String name) {
         return name.trim().replaceAll(" +", "_");
     }
 
+    // Método para crear un botón estilizado con un texto, color de fondo por defecto y color de fondo al pasar el ratón (hover).
     private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Arial", Font.BOLD, 14));
-        button.setBackground(defaultColor);
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
-        button.setPreferredSize(new Dimension(160, 45));
+        button.setFont(new Font("Arial", Font.BOLD, 14)); // Fuente en Arial, negrita, tamaño 14
+        button.setBackground(defaultColor); // Establece el color de fondo por defecto
+        button.setForeground(Color.WHITE); // Establece el color del texto a blanco
+        button.setFocusPainted(false); // Desactiva el borde de enfoque (cuando se selecciona)
+        button.setPreferredSize(new Dimension(160, 45));  // Establece el tamaño preferido del botón
         button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(Color.GRAY, 1),
-                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                BorderFactory.createLineBorder(Color.GRAY, 1), // Borde gris de 1px
+                BorderFactory.createEmptyBorder(5, 5, 5, 5) // Relleno interno de 5px
         ));
-        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR)); // Cambia el cursor al pasar sobre el botón
+        
+// Se establece un borde, un tamaño preferido, y se ajusta la fuente. También se agrega un efecto visual al pasar el ratón
+// sobre el botón, cambiando su color de fondo entre el valor por defecto y el color de hover.
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                button.setBackground(hoverColor);
+                button.setBackground(hoverColor); // Cambia al color de hover
             }
 
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                button.setBackground(defaultColor);
+                button.setBackground(defaultColor); // Vuelve al color por defecto
             }
         });
-        return button;
+        return button; // Devuelve el botón creado
     }
 
+    // Método para crear una etiqueta (JLabel) estilizada con un texto.
+    
     private JLabel createStyledLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(new Font("Arial", Font.BOLD, 14));
-        label.setForeground(new Color(25, 25, 112));
-        return label;
+        JLabel label = new JLabel(text); // Crea la etiqueta con el texto proporcionado
+        label.setFont(new Font("Arial", Font.BOLD, 14)); // Establece la fuente en Arial, negrita, tamaño 14
+        label.setForeground(new Color(25, 25, 112)); // Establece el color del texto a un tono azul oscuro (Midnight Blue)
+        return label; // Devuelve la etiqueta creada
     }
 
+    // Método para crear un campo de texto (JTextField) estilizado.
     private JTextField createStyledTextField() {
-        JTextField textField = new JTextField();
-        textField.setFont(new Font("Arial", Font.PLAIN, 14));
+        JTextField textField = new JTextField(); // Crea un nuevo campo de texto vacío
+        textField.setFont(new Font("Arial", Font.PLAIN, 14)); // Establece la fuente en Arial, tamaño 14
+        // Configura un borde compuesto alrededor del campo de texto
         textField.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
-                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                BorderFactory.createLineBorder(new Color(70, 130, 180), 1), // Línea azul de 1px de grosor
+                BorderFactory.createEmptyBorder(5, 5, 5, 5) // Espacio interno alrededor del campo de texto
         ));
-        textField.setBackground(Color.WHITE);
-        return textField;
+        textField.setBackground(Color.WHITE); // Establece el fondo del campo de texto a blanco
+        return textField; // Devuelve el campo de texto estilizado
     }
 }

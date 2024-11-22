@@ -163,6 +163,8 @@ public class DocumentoDAO {
     return documentos;
 }
     
+    // Busca una columna que contenga la palabra "cantidad" en una tabla específica.
+    
     public String obtenerColumnaCantidad(String tabla) throws SQLException {
         String sql = "DESCRIBE " + tabla;
         try (Connection conn = ConexionBaseDatos.getConexion();
@@ -171,12 +173,14 @@ public class DocumentoDAO {
             while (rs.next()) {
                 String columna = rs.getString("Field");
                 if (columna.toLowerCase().contains("cantidad")) {
-                    return columna;
+                    return columna; // Busca una columna que contenga la palabra "cantidad" en una tabla específica.
                 }
             }
         }
         throw new SQLException("No se encontró una columna de cantidad en la tabla " + tabla);
     }
+    
+    // Obtiene una lista de nombres de tablas dinámicas desde la base de datos.
     
     public List<String> obtenerTablasDinamicas() throws SQLException {
     List<String> tablas = new ArrayList<>();
@@ -188,9 +192,11 @@ public class DocumentoDAO {
             tablas.add(rs.getString("nombre"));
         }
     }
-    return tablas;
+    return tablas; // Los nombres provienen de la tabla `tipos_documentos`.
 }
 
+    // Registra una devolución en una tabla específica con los datos del documento, usuario y fecha.
+    
 public void registrarDevolucionDinamica(String tabla, String idDocumento, String idUsuario, Date fechaDevolucion) throws SQLException {
     String sql = "INSERT INTO " + tabla + " (id_documento, id_usuario, fecha_devolucion) VALUES (?, ?, ?)";
     try (Connection conexion = ConexionBaseDatos.getConexion();

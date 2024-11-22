@@ -63,6 +63,7 @@ public class UsuarioDAO {
      * @return Cantidad de usuarios.
      * @throws SQLException Si ocurre un error en la base de datos.
      */
+    
     public int contarUsuariosPorRol(String rol) throws SQLException {
         String sql = "SELECT COUNT(*) FROM usuarios WHERE rol = ?";
         try (Connection conn = ConexionBaseDatos.getConexion();
@@ -172,6 +173,8 @@ public class UsuarioDAO {
         return usuario;
     }
 
+    // Inserta un nuevo usuario en la tabla 'usuarios' con los datos proporcionados y la fecha de registro actual.
+    
     public void insertarUsuario(String id, String nombre, String email, String rol, String contraseña, String telefono, String direccion, Date fechaNacimiento) throws SQLException {
     String sql = "INSERT INTO usuarios (id, nombre, email, rol, contraseña, telefono, direccion, fecha_nacimiento, fecha_registro) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())";
     try (Connection conn = ConexionBaseDatos.getConexion();
@@ -188,7 +191,8 @@ public class UsuarioDAO {
     }
 }
 
-    
+    // Obtiene un usuario de la base de datos según su email y retorna un objeto Usuario con sus datos.
+
     public Usuario obtenerUsuarioPorEmail(String emailUsuario) throws SQLException {
     String sql = "SELECT * FROM usuarios WHERE email = ?";
     try (Connection conn = ConexionBaseDatos.getConexion();
