@@ -3,6 +3,7 @@ package com.biblioteca.Panel.Config;
 import com.biblioteca.controller.ConfiguracionController;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.sql.SQLException;
 import java.util.HashMap;
@@ -20,37 +21,58 @@ public class ConfiguracionRoles extends JPanel {
     public ConfiguracionRoles() {
         configuracionController = new ConfiguracionController();
 
-        setLayout(new GridLayout(5, 2, 10, 10));
-        setBorder(BorderFactory.createTitledBorder("Configuración por Rol"));
+        setLayout(new BorderLayout(10, 10));
+        setBackground(Color.WHITE); // Fondo blanco para un diseño limpio
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Etiqueta y ComboBox para el rol
-        add(new JLabel("Rol:"));
-        rolComboBox = new JComboBox<>(new String[]{"Administrador", "Profesor", "Alumno"});
+        // Título del panel
+        JLabel titleLabel = new JLabel("Configuración de Roles");
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        titleLabel.setForeground(new Color(70, 130, 180));
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        add(titleLabel, BorderLayout.NORTH);
+
+        // Panel de contenido
+        JPanel contentPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+        contentPanel.setBackground(Color.WHITE);
+        contentPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(70, 130, 180)),
+                "Configuración por Rol",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Segoe UI", Font.PLAIN, 14),
+                new Color(70, 130, 180)
+        ));
+
+        // Configuración de etiquetas y campos
+        contentPanel.add(createLabel("Rol:"));
+        rolComboBox = createComboBox(new String[]{"Administrador", "Profesor", "Alumno"});
         rolComboBox.addActionListener(e -> cargarConfiguracion());
-        add(rolComboBox);
+        contentPanel.add(rolComboBox);
 
-        // Etiqueta y campo para la mora diaria
-        add(new JLabel("Mora diaria (USD):"));
-        moraField = new JTextField();
-        add(moraField);
+        contentPanel.add(createLabel("Mora diaria (USD):"));
+        moraField = createTextField();
+        contentPanel.add(moraField);
 
-        // Etiqueta y campo para el límite de préstamos
-        add(new JLabel("Límite de préstamos:"));
-        limitePrestamosField = new JTextField();
-        add(limitePrestamosField);
+        contentPanel.add(createLabel("Límite de préstamos:"));
+        limitePrestamosField = createTextField();
+        contentPanel.add(limitePrestamosField);
 
-        // Etiqueta y campo para el límite de días de préstamo
-        add(new JLabel("Límite de días de préstamo:"));
-        limiteDiasField = new JTextField();
-        add(limiteDiasField);
+        contentPanel.add(createLabel("Límite de días de préstamo:"));
+        limiteDiasField = createTextField();
+        contentPanel.add(limiteDiasField);
 
-        // Botón para guardar los cambios
+        add(contentPanel, BorderLayout.CENTER);
+
+        // Botón de guardar
         guardarButton = new JButton("Guardar");
+        guardarButton.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        guardarButton.setBackground(new Color(70, 130, 180));
+        guardarButton.setForeground(Color.WHITE);
         guardarButton.addActionListener(e -> guardarConfiguracion());
-        add(new JLabel()); // Espaciador
-        add(guardarButton);
+        add(createButtonPanel(guardarButton), BorderLayout.SOUTH);
 
-        // Cargar configuración inicial para el rol seleccionado
+        // Cargar configuración inicial
         cargarConfiguracion();
     }
 
@@ -64,23 +86,9 @@ public class ConfiguracionRoles extends JPanel {
             String claveLimitePrestamos = "limite_prestamos_" + rol;
             String claveLimiteDias = "limite_dias_" + rol;
 
-            if (configuraciones.containsKey(claveMora)) {
-                moraField.setText(String.valueOf(configuraciones.get(claveMora)));
-            } else {
-                moraField.setText("");
-            }
-
-            if (configuraciones.containsKey(claveLimitePrestamos)) {
-                limitePrestamosField.setText(String.valueOf(configuraciones.get(claveLimitePrestamos).intValue()));
-            } else {
-                limitePrestamosField.setText("");
-            }
-
-            if (configuraciones.containsKey(claveLimiteDias)) {
-                limiteDiasField.setText(String.valueOf(configuraciones.get(claveLimiteDias).intValue()));
-            } else {
-                limiteDiasField.setText("");
-            }
+            moraField.setText(configuraciones.containsKey(claveMora) ? String.valueOf(configuraciones.get(claveMora)) : "");
+            limitePrestamosField.setText(configuraciones.containsKey(claveLimitePrestamos) ? String.valueOf(configuraciones.get(claveLimitePrestamos).intValue()) : "");
+            limiteDiasField.setText(configuraciones.containsKey(claveLimiteDias) ? String.valueOf(configuraciones.get(claveLimiteDias).intValue()) : "");
 
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al cargar configuración: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -114,5 +122,33 @@ public class ConfiguracionRoles extends JPanel {
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al guardar configuración: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private JLabel createLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        label.setForeground(new Color(70, 130, 180));
+        return label;
+    }
+
+    private JTextField createTextField() {
+        JTextField textField = new JTextField();
+        textField.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        return textField;
+    }
+
+    private JComboBox<String> createComboBox(String[] items) {
+        JComboBox<String> comboBox = new JComboBox<>(items);
+        comboBox.setFont(new Font("Segoe UI", Font.PLAIN, 16));
+        comboBox.setBackground(Color.WHITE);
+        comboBox.setForeground(Color.BLACK);
+        return comboBox;
+    }
+
+    private JPanel createButtonPanel(JButton button) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        panel.setBackground(Color.WHITE);
+        panel.add(button);
+        return panel;
     }
 }

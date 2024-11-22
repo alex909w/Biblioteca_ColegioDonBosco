@@ -67,16 +67,30 @@ public class GestionPrestamos extends JPanel {
         panelNorth.add(rolLabel);
 
         // Panel Superior: Búsqueda de Tipo de Documento
-        JPanel panelSuperior = new JPanel(new GridLayout(1, 1, 10, 10)); // Grid para alineación
-        panelSuperior.setBorder(new EmptyBorder(10, 10, 10, 10)); // Espacio alrededor
-        panelSuperior.setBackground(new Color(255, 255, 255)); // Fondo blanco
+        JPanel panelSuperior = new JPanel(new GridLayout(1, 1, 10, 10));
+        panelSuperior.setBorder(new EmptyBorder(10, 10, 10, 10)); // Agregar margen alrededor
+        panelSuperior.setBackground(new Color(240, 240, 240)); // Fondo blanco
 
+        // Crear un subpanel para alinear los componentes en una fila
         JPanel fila1 = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        fila1.setBackground(new Color(255, 255, 255));
-        buscarButton = new JButton("Buscar Documentos");
-        tiposDocumentosComboBox = new JComboBox<>();
+        fila1.setBackground(new Color(240, 240, 240));
 
-        fila1.add(new JLabel("Tipo de Documento:"));
+        // Crear y configurar los componentes
+        JLabel etiquetaTipoDocumento = new JLabel("Tipo de Documento:");
+        etiquetaTipoDocumento.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        etiquetaTipoDocumento.setForeground(Color.BLACK);
+
+        tiposDocumentosComboBox = new JComboBox<>();
+        tiposDocumentosComboBox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        tiposDocumentosComboBox.setPreferredSize(new Dimension(200, 30));
+
+        buscarButton = new JButton("Buscar Documentos");
+        buscarButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        buscarButton.setBackground(new Color(51, 102, 153)); // Azul
+        buscarButton.setForeground(Color.WHITE); // Texto blanco
+
+        // Agregar los componentes al subpanel
+        fila1.add(etiquetaTipoDocumento);
         fila1.add(tiposDocumentosComboBox);
         fila1.add(buscarButton);
 
@@ -105,7 +119,7 @@ public class GestionPrestamos extends JPanel {
         diasPrestamoComboBox = new JComboBox<>();
         registrarButton = new JButton("Registrar Préstamo");
 
-        registrarButton.setBackground(new Color(0, 123, 255));
+        registrarButton.setBackground(new Color(51, 102, 153));
         registrarButton.setForeground(Color.WHITE);
         registrarButton.setFocusPainted(false);
         registrarButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
