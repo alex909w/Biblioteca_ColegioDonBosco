@@ -70,11 +70,7 @@ public class VerUsuarios extends JPanel {
                 searchButton.setBackground(new Color(51, 102, 153));
             }
         });
-<<<<<<< Updated upstream:src/com/biblioteca/acciones/Usuarios/VerUsuarios.java
-                        
-=======
 
->>>>>>> Stashed changes:src/com/biblioteca/Panel/Usuarios/VerUsuarios.java
         searchButton.addActionListener(e -> buscarUsuarios());
 
         // Añadir componentes al panel de búsqueda

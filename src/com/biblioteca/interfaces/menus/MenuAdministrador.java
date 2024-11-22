@@ -6,17 +6,6 @@ import com.biblioteca.Panel.Inventario.RegistrarArticulo;
 import com.biblioteca.Formularios.CrearFormulario;
 import com.biblioteca.Formularios.EditarFormulario;
 import com.biblioteca.Formularios.EliminarFormulario;
-<<<<<<< Updated upstream:src/com/biblioteca/interfaces/MenuAdministrador.java
-import com.biblioteca.acciones.Configuraciones.ConfiguracionRoles;
-import com.biblioteca.acciones.Prestamos.RegistrarDevolucion;
-import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
-import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
-import com.biblioteca.acciones.Prestamos.GestionPrestamos;
-import com.biblioteca.acciones.Usuarios.EditarUsuario;
-import com.biblioteca.acciones.Usuarios.EliminarUsuario;
-import com.biblioteca.acciones.Usuarios.AgregarUsuario;
-import com.biblioteca.acciones.Usuarios.VerUsuarios; // Importamos la clase VerUsuarios
-=======
 import com.biblioteca.Panel.Config.ConfiguracionRoles;
 import com.biblioteca.Panel.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.Panel.Prestamos.GestionPrestamos;
@@ -26,7 +15,6 @@ import com.biblioteca.Panel.Usuarios.AgregarUsuario;
 import com.biblioteca.Panel.Usuarios.EditarUsuario;
 import com.biblioteca.Panel.Usuarios.EliminarUsuario;
 import com.biblioteca.Panel.Usuarios.VerUsuarios; // Importamos la clase VerUsuarios
->>>>>>> Stashed changes:src/com/biblioteca/interfaces/menus/MenuAdministrador.java
 
 import javax.swing.*;
 import java.awt.*;
