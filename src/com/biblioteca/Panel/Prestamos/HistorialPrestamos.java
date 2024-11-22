@@ -1,6 +1,6 @@
 package com.biblioteca.Panel.Prestamos;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.basedatos.ConexionBaseDatos;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;

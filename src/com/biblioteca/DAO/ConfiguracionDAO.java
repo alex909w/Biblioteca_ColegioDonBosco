@@ -1,6 +1,6 @@
 package com.biblioteca.dao;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.basedatos.ConexionBaseDatos;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

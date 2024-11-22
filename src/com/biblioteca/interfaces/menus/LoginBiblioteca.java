@@ -1,6 +1,7 @@
 package com.biblioteca.interfaces.menus;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.basedatos.ConexionBaseDatos;
+import com.biblioteca.interfaces.menus.MenuAdministrador;
 
 import javax.swing.*;
 import java.awt.*;

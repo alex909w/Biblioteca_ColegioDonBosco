@@ -2,7 +2,7 @@
 
 package com.biblioteca.Panel.Inventario;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.basedatos.ConexionBaseDatos;
 import com.biblioteca.controller.InventarioController;
 
 import javax.swing.*;
