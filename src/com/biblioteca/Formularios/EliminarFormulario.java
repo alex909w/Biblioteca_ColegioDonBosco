@@ -1,24 +1,31 @@
 package com.biblioteca.Formularios;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.controller.FormularioController;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.sql.*;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.List;
 
+/**
+ * Panel para eliminar un formulario existente.
+ */
 public class EliminarFormulario extends JPanel {
     private JComboBox<String> tablasComboBox;
     private JTable datosTabla;
     private DefaultTableModel tableModel;
     private JButton eliminarButton, mostrarDatosButton;
 
-    // Definición de colores para los botones
     private final Color botonEliminar = new Color(255, 69, 0); // Orange Red
     private final Color botonEliminarHover = new Color(178, 34, 34); // Firebrick
     private final Color botonMostrarDatos = new Color(34, 139, 34); // Forest Green
     private final Color botonMostrarDatosHover = new Color(0, 100, 0); // Dark Green
+
+    private FormularioController formularioController = new FormularioController();
 
     public EliminarFormulario() {
         setLayout(new BorderLayout(10, 10));
@@ -89,54 +96,40 @@ public class EliminarFormulario extends JPanel {
     }
 
     private void cargarTablasExistentes() {
-    tablasComboBox.removeAllItems(); // Limpiar el ComboBox antes de cargar
-    String query = "SELECT nombre FROM tipos_documentos"; // Consulta para obtener los nombres de las tablas
-    
-     // Añadir el elemento predeterminado
+        tablasComboBox.removeAllItems();
         tablasComboBox.addItem("Opciones");
-
-    try (Connection conn = ConexionBaseDatos.getConexion();
-         Statement stmt = conn.createStatement();
-         ResultSet rs = stmt.executeQuery(query)) {
-
-        while (rs.next()) {
-            tablasComboBox.addItem(rs.getString("nombre"));
+        try {
+            List<String> tablas = formularioController.obtenerTablas();
+            for (String tabla : tablas) {
+                tablasComboBox.addItem(tabla);
+            }
+            if (tablas.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No se encontraron tablas registradas en 'tipos_documentos'.", "Información", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al cargar tablas desde 'tipos_documentos': " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-
-        if (tablasComboBox.getItemCount() == 0) {
-            JOptionPane.showMessageDialog(this, "No se encontraron tablas registradas en 'tipos_documentos'.", "Información", JOptionPane.INFORMATION_MESSAGE);
-        }
-    } catch (SQLException ex) {
-        JOptionPane.showMessageDialog(this, "Error al cargar tablas desde 'tipos_documentos': " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
-}
 
     private void mostrarDatos() {
         String nombreTabla = (String) tablasComboBox.getSelectedItem();
-        if (nombreTabla == null || nombreTabla.isEmpty()) {
+        if (nombreTabla == null || nombreTabla.isEmpty() || nombreTabla.equals("Opciones")) {
             JOptionPane.showMessageDialog(this, "Por favor, seleccione una tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Limpiar modelo de tabla existente
         tableModel.setRowCount(0);
         tableModel.setColumnCount(0);
 
-        String query = "SELECT * FROM " + nombreTabla + " LIMIT 100"; // Limitar a 100 filas para rendimiento
-
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-
+        try {
+            ResultSet rs = formularioController.obtenerDatosTabla(nombreTabla, 100);
             ResultSetMetaData metaData = rs.getMetaData();
             int columnCount = metaData.getColumnCount();
 
-            // Añadir columnas al modelo
             for (int i = 1; i <= columnCount; i++) {
                 tableModel.addColumn(metaData.getColumnName(i));
             }
 
-            // Añadir filas al modelo
             while (rs.next()) {
                 Object[] rowData = new Object[columnCount];
                 for (int i = 1; i <= columnCount; i++) {
@@ -155,41 +148,27 @@ public class EliminarFormulario extends JPanel {
     }
 
     private void eliminarTabla() {
-    String nombreTabla = (String) tablasComboBox.getSelectedItem();
-    if (nombreTabla == null || nombreTabla.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Por favor, seleccione una tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+        String nombreTabla = (String) tablasComboBox.getSelectedItem();
+        if (nombreTabla == null || nombreTabla.isEmpty() || nombreTabla.equals("Opciones")) {
+            JOptionPane.showMessageDialog(this, "Por favor, seleccione una tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-    int confirm = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar la tabla '" + nombreTabla + "'?\nEsta acción no se puede deshacer.",
-            "Confirmar Eliminación", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        int confirm = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar la tabla '" + nombreTabla + "'?\nEsta acción no se puede deshacer.",
+                "Confirmar Eliminación", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
-    if (confirm == JOptionPane.YES_OPTION) {
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             Statement stmt = conn.createStatement()) {
-
-            // Eliminar la tabla de la base de datos
-            String sqlDropTable = "DROP TABLE " + nombreTabla;
-            stmt.executeUpdate(sqlDropTable);
-
-            // Eliminar el registro de tipos_documentos
-            String sqlDeleteTipo = "DELETE FROM tipos_documentos WHERE nombre = ?";
-            try (PreparedStatement ps = conn.prepareStatement(sqlDeleteTipo)) {
-                ps.setString(1, nombreTabla);
-                ps.executeUpdate();
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                formularioController.eliminarTabla(nombreTabla);
+                JOptionPane.showMessageDialog(this, "Tabla eliminada y registro actualizado en 'tipos_documentos'.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                tablasComboBox.removeItem(nombreTabla);
+                tableModel.setRowCount(0);
+                tableModel.setColumnCount(0);
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Error al eliminar la tabla o actualizar 'tipos_documentos': " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
-
-            JOptionPane.showMessageDialog(this, "Tabla eliminada y registro actualizado en 'tipos_documentos'.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-            tablasComboBox.removeItem(nombreTabla);
-            tableModel.setRowCount(0);
-            tableModel.setColumnCount(0);
-
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error al eliminar la tabla o actualizar 'tipos_documentos': " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-}
-
 
     private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
         JButton button = new JButton(text);

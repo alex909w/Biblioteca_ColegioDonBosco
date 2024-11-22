@@ -1,22 +1,31 @@
-package com.biblioteca.acciones.Usuarios;
+package com.biblioteca.Panel.Usuarios;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.controller.UsuarioController;
+import com.biblioteca.modelos.Usuario;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.*;
 import java.awt.*;
-import java.sql.*;
+import java.sql.SQLException;
+import java.util.List;
 
+/**
+ * Panel para ver todos los usuarios registrados.
+ */
 public class VerUsuarios extends JPanel {
     private JTable usuariosTable;
     private DefaultTableModel tableModel;
     private JTextField searchField;
     private JComboBox<String> searchTypeComboBox;
 
+    private UsuarioController usuarioController;
+
     public VerUsuarios() {
+        usuarioController = new UsuarioController();
+
         setLayout(new BorderLayout(10, 10));
-        setBackground(Color.WHITE); // Fondo blanco para un aspecto limpio
+        setBackground(Color.WHITE);
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Título del panel
@@ -39,7 +48,7 @@ public class VerUsuarios extends JPanel {
         ));
 
         // ComboBox para tipo de búsqueda
-        searchTypeComboBox = new JComboBox<>(new String[]{"Nombre", "ID", "Correo"});
+        searchTypeComboBox = new JComboBox<>(new String[]{"Nombre", "ID", "Email"});
         searchTypeComboBox.setFont(new Font("Segoe UI", Font.PLAIN, 16));
 
         // Campo de texto para la búsqueda
@@ -61,7 +70,11 @@ public class VerUsuarios extends JPanel {
                 searchButton.setBackground(new Color(51, 102, 153));
             }
         });
+<<<<<<< Updated upstream:src/com/biblioteca/acciones/Usuarios/VerUsuarios.java
                         
+=======
+
+>>>>>>> Stashed changes:src/com/biblioteca/Panel/Usuarios/VerUsuarios.java
         searchButton.addActionListener(e -> buscarUsuarios());
 
         // Añadir componentes al panel de búsqueda
@@ -86,45 +99,35 @@ public class VerUsuarios extends JPanel {
     }
 
     private void cargarUsuarios(String parametro, String valor) {
-        tableModel.setRowCount(0); // Limpiar los datos actuales de la tabla
-        tableModel.setColumnCount(0); // Limpiar las columnas (si es necesario)
+        tableModel.setRowCount(0);
+        tableModel.setColumnCount(0);
 
-        try (Connection conn = ConexionBaseDatos.getConexion()) {
-            String query = "SELECT * FROM usuarios";
+        try {
+            List<Usuario> usuarios;
             if (parametro != null && valor != null && !valor.isEmpty()) {
-                query += " WHERE " + parametro + " LIKE ?";
+                usuarios = usuarioController.buscarUsuarios(parametro, valor);
+            } else {
+                usuarios = usuarioController.obtenerTodosLosUsuarios();
             }
 
-            PreparedStatement stmt = conn.prepareStatement(query);
-
-            if (parametro != null && valor != null && !valor.isEmpty()) {
-                stmt.setString(1, "%" + valor + "%");
-            }
-
-            ResultSet rs = stmt.executeQuery();
-
-            // Obtener metadatos de las columnas
-            ResultSetMetaData metaData = rs.getMetaData();
-            int columnCount = metaData.getColumnCount();
-
-            // Añadir columnas al modelo de la tabla, excepto la columna de contraseña
-            for (int i = 1; i <= columnCount; i++) {
-                String columnName = metaData.getColumnName(i);
-                if (!columnName.equalsIgnoreCase("contraseña")) { // Filtrar columna 'clave'
-                    tableModel.addColumn(formatColumnName(columnName));
-                }
+            // Añadir columnas al modelo de la tabla
+            String[] columnNames = {"ID", "Nombre", "Email", "Rol", "Teléfono", "Dirección", "Fecha Nacimiento", "Fecha Registro"};
+            for (String columnName : columnNames) {
+                tableModel.addColumn(columnName);
             }
 
             // Añadir filas al modelo de la tabla
-            while (rs.next()) {
-                Object[] rowData = new Object[tableModel.getColumnCount()];
-                int colIndex = 0;
-                for (int i = 1; i <= columnCount; i++) {
-                    String columnName = metaData.getColumnName(i);
-                    if (!columnName.equalsIgnoreCase("contraseña")) { // Ignorar valores de la columna 'clave'
-                        rowData[colIndex++] = rs.getObject(i);
-                    }
-                }
+            for (Usuario usuario : usuarios) {
+                Object[] rowData = {
+                        usuario.getId(),
+                        usuario.getNombre(),
+                        usuario.getEmail(),
+                        usuario.getRol(),
+                        usuario.getTelefono(),
+                        usuario.getDireccion(),
+                        usuario.getFechaNacimiento(),
+                        usuario.getFechaRegistro()
+                };
                 tableModel.addRow(rowData);
             }
 
@@ -144,8 +147,8 @@ public class VerUsuarios extends JPanel {
             parametro = "nombre";
         } else if ("ID".equals(tipoBusqueda)) {
             parametro = "id";
-        } else if ("Correo".equals(tipoBusqueda)) {
-            parametro = "correo";
+        } else if ("Email".equals(tipoBusqueda)) {
+            parametro = "email";
         }
 
         String valorBusqueda = searchField.getText().trim();
@@ -163,7 +166,7 @@ public class VerUsuarios extends JPanel {
             // Ajustar el ancho de las columnas
             String columnName = columnModel.getColumn(i).getHeaderValue().toString().toLowerCase();
             if (columnName.contains("id")) {
-                columnModel.getColumn(i).setPreferredWidth(100); // Aumentamos el ancho a 100
+                columnModel.getColumn(i).setPreferredWidth(100);
             } else {
                 columnModel.getColumn(i).setPreferredWidth(150);
             }
@@ -193,10 +196,5 @@ public class VerUsuarios extends JPanel {
         JScrollPane scrollPane = new JScrollPane(component);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         return scrollPane;
-    }
-
-    private String formatColumnName(String input) {
-        String output = input.replace("_", " ");
-        return Character.toUpperCase(output.charAt(0)) + output.substring(1);
     }
 }

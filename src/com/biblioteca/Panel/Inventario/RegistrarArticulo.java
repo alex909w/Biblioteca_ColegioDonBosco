@@ -1,32 +1,32 @@
-package com.biblioteca.Inventario;
+package com.biblioteca.Panel.Inventario;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.controller.InventarioController;
 import com.biblioteca.utilidades.DateLabelFormatter;
+import org.jdatepicker.impl.JDatePanelImpl;
+import org.jdatepicker.impl.JDatePickerImpl;
+import org.jdatepicker.impl.UtilDateModel;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.sql.*;
-import java.util.ArrayList;
+import java.sql.Date;
+import java.sql.SQLException;
+import java.util.*;
 import java.util.List;
 import java.util.Properties;
 
-import org.jdatepicker.impl.JDatePickerImpl;
-import org.jdatepicker.impl.JDatePanelImpl;
-import org.jdatepicker.impl.UtilDateModel;
-
 public class RegistrarArticulo extends JPanel {
-    private JComboBox<String> formulariosComboBox; // ComboBox para seleccionar tablas
-    private JPanel formularioPanel; // Panel dinámico para los formularios
+    private JComboBox<String> formulariosComboBox;
+    private JPanel formularioPanel;
     private JButton cargarFormularioButton, registrarButton;
-    private String tablaSeleccionada; // Nombre de la tabla seleccionada
-    private List<Component> camposDinamicos; // Cambiar a Component
+    private String tablaSeleccionada;
+    private List<Component> camposDinamicos;
+    private InventarioController inventarioController = new InventarioController();
 
-    // Definición de colores para los botones
-    private final Color botonCargarFormulario = new Color(34, 139, 34); // Forest Green
-    private final Color botonCargarFormularioHover = new Color(0, 100, 0); // Dark Green
-    private final Color botonRegistrar = new Color(255, 69, 0); // Orange Red
-    private final Color botonRegistrarHover = new Color(178, 34, 34); // Firebrick
+    private final Color botonCargarFormulario = new Color(34, 139, 34);
+    private final Color botonCargarFormularioHover = new Color(0, 100, 0);
+    private final Color botonRegistrar = new Color(255, 69, 0);
+    private final Color botonRegistrarHover = new Color(178, 34, 34);
 
     public RegistrarArticulo() {
 
@@ -60,7 +60,6 @@ public class RegistrarArticulo extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.5;
         formulariosComboBox = createStyledComboBox();
-        // Configurar el renderer personalizado para formatear la visualización
         formulariosComboBox.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index,
@@ -115,20 +114,18 @@ public class RegistrarArticulo extends JPanel {
     }
 
     // Carga los formularios existentes desde la base de datos y los añade al ComboBox.
+     
     private void cargarFormularios() {
         formulariosComboBox.removeAllItems();
         // Añadir el elemento predeterminado "Opciones"
         addDefaultItem(formulariosComboBox, "Opciones");
 
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             PreparedStatement stmt = conn.prepareStatement("SELECT nombre FROM tipos_documentos");
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                formulariosComboBox.addItem(rs.getString("nombre"));
+        try {
+            List<String> formularios = inventarioController.obtenerFormularios();
+            for (String formulario : formularios) {
+                formulariosComboBox.addItem(formulario);
             }
-
-            if (formulariosComboBox.getItemCount() == 1) { // Solo el elemento predeterminado
+            if (formularios.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "No se encontraron formularios registrados en 'tipos_documentos'.", "Información", JOptionPane.INFORMATION_MESSAGE);
             }
         } catch (SQLException ex) {
@@ -137,22 +134,19 @@ public class RegistrarArticulo extends JPanel {
     }
 
     // Carga el formulario dinámico basado en la tabla seleccionada.
-    // Carga el formulario dinámico basado en la tabla seleccionada.
-private void cargarFormulario() {
-    tablaSeleccionada = (String) formulariosComboBox.getSelectedItem();
-    if (tablaSeleccionada == null || tablaSeleccionada.equals("Opciones")) {
-        JOptionPane.showMessageDialog(this, "Por favor, seleccione una opción válida.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
+     
+    private void cargarFormulario() {
+        tablaSeleccionada = (String) formulariosComboBox.getSelectedItem();
+        if (tablaSeleccionada == null || tablaSeleccionada.equals("Opciones")) {
+            JOptionPane.showMessageDialog(this, "Por favor, seleccione una opción válida.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-    formularioPanel.removeAll();
-    camposDinamicos = new ArrayList<>();
+        formularioPanel.removeAll();
+        camposDinamicos = new ArrayList<>();
 
-    try (Connection conn = ConexionBaseDatos.getConexion()) {
-        // Obtener las columnas de la tabla
-        String describeQuery = "DESCRIBE `" + tablaSeleccionada + "`";
-        try (PreparedStatement stmt = conn.prepareStatement(describeQuery);
-             ResultSet rs = stmt.executeQuery()) {
+        try {
+            List<Map<String, String>> columnas = inventarioController.obtenerColumnasTabla(tablaSeleccionada);
 
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.insets = new Insets(10, 10, 10, 10);
@@ -161,15 +155,12 @@ private void cargarFormulario() {
             gbc.gridy = 0;
             gbc.weightx = 0.3;
 
-            while (rs.next()) {
-                String nombreColumna = rs.getString("Field");
-                String tipo = rs.getString("Type").toLowerCase();
-                String key = rs.getString("Key");
+            for (Map<String, String> columnaInfo : columnas) {
+                String nombreColumna = columnaInfo.get("Field");
+                String tipo = columnaInfo.get("Type").toLowerCase();
 
-                // Identificar si la columna es el ID dinámico (id_<nombre_tabla>)
                 boolean esId = nombreColumna.equalsIgnoreCase("id_" + tablaSeleccionada.toLowerCase());
 
-                // Etiqueta para la columna
                 String etiquetaTexto = esId ? "ID:" : formatString(nombreColumna) + ":";
                 JLabel etiqueta = createStyledLabel(etiquetaTexto);
                 formularioPanel.add(etiqueta, gbc);
@@ -178,32 +169,28 @@ private void cargarFormulario() {
                 gbc.weightx = 0.7;
 
                 if (nombreColumna.equalsIgnoreCase("estado")) {
-                    // Campo de selección para el estado
                     JComboBox<String> estadoComboBox = new JComboBox<>(new String[]{"Bueno", "Dañado", "En Reparación"});
                     estadoComboBox.setFont(new Font("Arial", Font.PLAIN, 14));
                     estadoComboBox.setBackground(Color.WHITE);
                     formularioPanel.add(estadoComboBox, gbc);
                     camposDinamicos.add(estadoComboBox);
                 } else if (esId) {
-                    // Campo para ID: generar automáticamente
-                    String nuevoId = generarNuevoId(conn, tablaSeleccionada);
+                    String prefijo = tablaSeleccionada.length() >= 3 ? tablaSeleccionada.substring(0, 3).toUpperCase() : tablaSeleccionada.toUpperCase();
+                    String nuevoId = inventarioController.generarNuevoId(tablaSeleccionada, prefijo);
                     JTextField campoTexto = createStyledTextField();
                     campoTexto.setText(nuevoId);
-                    campoTexto.setEditable(false); // Solo lectura
+                    campoTexto.setEditable(false);
                     formularioPanel.add(campoTexto, gbc);
                     camposDinamicos.add(campoTexto);
                 } else if (tipo.contains("date") || tipo.contains("timestamp")) {
-                    // Campo de fecha con calendario
                     JPanel campoFecha = crearCampoFecha();
                     formularioPanel.add(campoFecha, gbc);
                 } else {
-                    // Campo de texto para otras columnas
                     JTextField campoTexto = createStyledTextField();
                     formularioPanel.add(campoTexto, gbc);
                     camposDinamicos.add(campoTexto);
                 }
 
-                // Resetear GridBagConstraints para la siguiente fila
                 gbc.gridx = 0;
                 gbc.weightx = 0.3;
                 gbc.gridy++;
@@ -216,130 +203,75 @@ private void cargarFormulario() {
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al cargar formulario: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-    } catch (SQLException ex) {
-        JOptionPane.showMessageDialog(this, "Error al conectar a la base de datos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
-}
 
-// Crear un campo de fecha con calendario
-private JPanel crearCampoFecha() {
-    JPanel panel = new JPanel(new BorderLayout());
-    panel.setBackground(new Color(255, 255, 255));
+    // Crea un campo de fecha con calendario.
 
-    // Crear el modelo de fecha
-    UtilDateModel model = new UtilDateModel();
-    model.setSelected(false); // Por defecto, sin selección
+    private JPanel crearCampoFecha() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(new Color(255, 255, 255));
 
-    // Propiedades del calendario
-    Properties properties = new Properties();
-    properties.put("text.today", "Hoy");
-    properties.put("text.month", "Mes");
-    properties.put("text.year", "Año");
+        UtilDateModel model = new UtilDateModel();
+        model.setSelected(false);
 
-    JDatePanelImpl datePanel = new JDatePanelImpl(model, properties);
-    JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateLabelFormatter());
+        Properties properties = new Properties();
+        properties.put("text.today", "Hoy");
+        properties.put("text.month", "Mes");
+        properties.put("text.year", "Año");
 
-    panel.add(datePicker, BorderLayout.CENTER);
-    camposDinamicos.add(datePicker); // Agregar a la lista de campos dinámicos
+        JDatePanelImpl datePanel = new JDatePanelImpl(model, properties);
+        JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateLabelFormatter());
 
-    return panel;
-}
+        panel.add(datePicker, BorderLayout.CENTER);
+        camposDinamicos.add(datePicker);
 
-// Obtener la fecha seleccionada del JDatePicker
-private java.sql.Date obtenerFechaSeleccionada(JDatePickerImpl datePicker) {
-    if (datePicker.getModel().getValue() != null) {
-        java.util.Date selectedDate = (java.util.Date) datePicker.getModel().getValue();
-        return new java.sql.Date(selectedDate.getTime()); // Convertir a java.sql.Date
+        return panel;
     }
-    return null; // Si no se seleccionó ninguna fecha
-}
 
+    // Obtiene la fecha seleccionada del JDatePicker.
 
-    // Genera el próximo ID automáticamente basado en el nombre de la tabla.
-    private String generarNuevoId(Connection conn, String tabla) throws SQLException {
-        // Obtener las primeras 3 letras del nombre de la tabla
-        String prefijo = tabla.length() >= 3 ? tabla.substring(0, 3).toUpperCase() : tabla.toUpperCase();
-        String nuevoId = prefijo + "0001"; // Valor predeterminado si no hay registros
-
-        // Nombre de la columna ID dinámico basado en la tabla
-        String columnaId = "id_" + tabla.toLowerCase();
-
-        // Consulta para obtener el mayor ID existente
-        String sql = "SELECT MAX(CAST(SUBSTRING(" + columnaId + ", LENGTH(?) + 1) AS UNSIGNED)) AS max_id FROM " + tabla;
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, prefijo);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next() && rs.getInt("max_id") > 0) {
-                    int maxId = rs.getInt("max_id");
-                    nuevoId = prefijo + String.format("%04d", maxId + 1); // Incrementar el valor numérico y formatear
-                }
-            }
+    private java.sql.Date obtenerFechaSeleccionada(JDatePickerImpl datePicker) {
+        if (datePicker.getModel().getValue() != null) {
+            java.util.Date selectedDate = (java.util.Date) datePicker.getModel().getValue();
+            return new java.sql.Date(selectedDate.getTime());
         }
-
-        return nuevoId;
+        return null;
     }
 
     // Registra los datos ingresados en el formulario en la tabla seleccionada.
+     
     private void registrarDatos() {
-    if (tablaSeleccionada == null || tablaSeleccionada.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Seleccione una tabla válida.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    // Validar entradas antes de proceder
-    if (!validarEntradas()) {
-        return;
-    }
-
-    List<Object> valores = new ArrayList<>();
-    List<String> columnas = new ArrayList<>();
-
-    for (Component campo : camposDinamicos) {
-        if (campo instanceof JTextField) {
-            valores.add(((JTextField) campo).getText().trim());
-        } else if (campo instanceof JComboBox) {
-            valores.add(((JComboBox<?>) campo).getSelectedItem().toString());
-        } else if (campo instanceof JDatePickerImpl) {
-            java.sql.Date fecha = obtenerFechaSeleccionada((JDatePickerImpl) campo);
-            valores.add(fecha);
+        if (tablaSeleccionada == null || tablaSeleccionada.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Seleccione una tabla válida.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
         }
-    }
 
-    StringBuilder sql = new StringBuilder("INSERT INTO ").append("`").append(tablaSeleccionada).append("` (");
-    StringBuilder placeholders = new StringBuilder(" VALUES (");
+        // Validar entradas antes de proceder
+        if (!validarEntradas()) {
+            return;
+        }
 
-    try (Connection conn = ConexionBaseDatos.getConexion()) {
-        // Obtener las columnas para generar el SQL dinámico
-        String describeQuery = "DESCRIBE `" + tablaSeleccionada + "`";
-        try (PreparedStatement stmt = conn.prepareStatement(describeQuery);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                String nombreColumna = rs.getString("Field");
-                columnas.add(nombreColumna);
-                sql.append("`").append(nombreColumna).append("`, ");
-                placeholders.append("?, ");
+        List<Object> valores = new ArrayList<>();
+        List<String> columnas = new ArrayList<>();
+
+        try {
+            List<Map<String, String>> columnasInfo = inventarioController.obtenerColumnasTabla(tablaSeleccionada);
+            for (Map<String, String> columnaInfo : columnasInfo) {
+                columnas.add(columnaInfo.get("Field"));
             }
-        }
 
-        // Quitar las comas finales y cerrar paréntesis
-        if (sql.length() > 0 && placeholders.length() > 0) {
-            sql.setLength(sql.length() - 2);
-            sql.append(")");
-            placeholders.setLength(placeholders.length() - 2);
-            placeholders.append(")");
-            sql.append(placeholders);
-        }
-
-        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-            for (int i = 0; i < valores.size(); i++) {
-                Object valor = valores.get(i);
-                if (valor instanceof java.sql.Date) {
-                    stmt.setDate(i + 1, (java.sql.Date) valor);
-                } else {
-                    stmt.setString(i + 1, valor.toString());
+            for (Component campo : camposDinamicos) {
+                if (campo instanceof JTextField) {
+                    valores.add(((JTextField) campo).getText().trim());
+                } else if (campo instanceof JComboBox) {
+                    valores.add(((JComboBox<?>) campo).getSelectedItem().toString());
+                } else if (campo instanceof JDatePickerImpl) {
+                    java.sql.Date fecha = obtenerFechaSeleccionada((JDatePickerImpl) campo);
+                    valores.add(fecha);
                 }
             }
-            stmt.executeUpdate();
+
+            inventarioController.registrarDatos(tablaSeleccionada, columnas, valores);
             JOptionPane.showMessageDialog(this, "Datos registrados exitosamente en " + tablaSeleccionada, "Éxito", JOptionPane.INFORMATION_MESSAGE);
 
             // Limpiar campos después del registro
@@ -351,14 +283,10 @@ private java.sql.Date obtenerFechaSeleccionada(JDatePickerImpl datePicker) {
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al registrar datos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-
-    } catch (SQLException ex) {
-        JOptionPane.showMessageDialog(this, "Error al conectar a la base de datos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
-}
-
 
     // Valida las entradas del formulario antes de registrar los datos.
+
     private boolean validarEntradas() {
         for (Component campo : camposDinamicos) {
             if (campo instanceof JTextField) {
@@ -380,37 +308,39 @@ private java.sql.Date obtenerFechaSeleccionada(JDatePickerImpl datePicker) {
                     return false;
                 }
             }
-            // Puedes añadir más validaciones para otros tipos de componentes si es necesario
         }
         return true;
     }
 
     // Limpia los campos de texto editables después de registrar los datos.
+     
     private void limpiarCampos() {
         for (Component campo : camposDinamicos) {
             if (campo instanceof JTextField) {
                 JTextField textField = (JTextField) campo;
-                if (textField.isEditable()) { // Evitar limpiar el campo ID que está en modo solo lectura
+                if (textField.isEditable()) {
                     textField.setText("");
                 }
             } else if (campo instanceof JComboBox) {
                 JComboBox<?> comboBox = (JComboBox<?>) campo;
-                comboBox.setSelectedIndex(-1); // Reiniciar el comboBox (dejarlo sin selección)
+                comboBox.setSelectedIndex(-1);
             } else if (campo instanceof JDatePickerImpl) {
                 JDatePickerImpl datePicker = (JDatePickerImpl) campo;
-                datePicker.getModel().setValue(null); // Reiniciar el selector de fecha
+                datePicker.getModel().setValue(null);
             }
-            // Puedes añadir más tipos de componentes para limpiar si es necesario
         }
     }
 
+    // Actualiza el próximo ID después de registrar un nuevo registro.
+ 
     private void actualizarProximoId() {
         for (Component campo : camposDinamicos) {
             if (campo instanceof JTextField) {
                 JTextField textField = (JTextField) campo;
                 if (!textField.isEditable()) { // Es el campo ID
-                    try (Connection conn = ConexionBaseDatos.getConexion()) {
-                        String nuevoId = generarNuevoId(conn, tablaSeleccionada);
+                    try {
+                        String prefijo = tablaSeleccionada.length() >= 3 ? tablaSeleccionada.substring(0, 3).toUpperCase() : tablaSeleccionada.toUpperCase();
+                        String nuevoId = inventarioController.generarNuevoId(tablaSeleccionada, prefijo);
                         textField.setText(nuevoId);
                     } catch (SQLException ex) {
                         JOptionPane.showMessageDialog(this, "Error al actualizar el ID: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -421,7 +351,8 @@ private java.sql.Date obtenerFechaSeleccionada(JDatePickerImpl datePicker) {
         }
     }
 
-    // Métodos auxiliares para crear componentes estilizados
+    // Crea un botón estilizado con colores personalizados y efectos hover.
+
     private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
         JButton button = new JButton(text);
         button.setFont(new Font("Arial", Font.BOLD, 14));
@@ -444,12 +375,16 @@ private java.sql.Date obtenerFechaSeleccionada(JDatePickerImpl datePicker) {
         return button;
     }
 
+    //Crea una etiqueta estilizada con colores y fuentes personalizadas.
+
     private JLabel createStyledLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Arial", Font.BOLD, 14));
-        label.setForeground(new Color(70, 130, 180)); // Steel Blue
+        label.setForeground(new Color(70, 130, 180));
         return label;
     }
+
+    //Crea un ComboBox estilizado con bordes y fuentes personalizadas.
 
     private JComboBox<String> createStyledComboBox() {
         JComboBox<String> comboBox = new JComboBox<>();
@@ -458,44 +393,28 @@ private java.sql.Date obtenerFechaSeleccionada(JDatePickerImpl datePicker) {
         return comboBox;
     }
 
+    // Crea un campo de texto estilizado con bordes y fuentes personalizadas.
+    
     private JTextField createStyledTextField() {
         JTextField textField = new JTextField();
         textField.setFont(new Font("Arial", Font.PLAIN, 14));
         textField.setBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 1));
-        textField.setBackground(Color.WHITE); // Fondo blanco para mejor contraste
+        textField.setBackground(Color.WHITE);
         return textField;
     }
+
+    // Formatea una cadena de texto convirtiéndola a mayúsculas y reemplazando guiones bajos con espacios.
 
     private String formatString(String input) {
         return input.toUpperCase().replace("_", " ");
     }
 
+    //Añade un elemento predeterminado al ComboBox.
+   
     private void addDefaultItem(JComboBox<String> comboBox, String defaultItem) {
         if (comboBox.getItemCount() == 0 || !comboBox.getItemAt(0).equals(defaultItem)) {
             comboBox.insertItemAt(defaultItem, 0);
             comboBox.setSelectedIndex(0);
         }
-    }
-
-    // Crear un campo de fecha con calendario
-    private JPanel crearCampoFecha(GridBagConstraints gbc, List<Component> camposDinamicos) {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(new Color(255, 255, 255));
-
-        UtilDateModel model = new UtilDateModel();
-        model.setSelected(false);
-
-        Properties properties = new Properties();
-        properties.put("text.today", "Hoy");
-        properties.put("text.month", "Mes");
-        properties.put("text.year", "Año");
-
-        JDatePanelImpl datePanel = new JDatePanelImpl(model, properties);
-        JDatePickerImpl datePicker = new JDatePickerImpl(datePanel, new DateLabelFormatter());
-
-        panel.add(datePicker, BorderLayout.CENTER);
-        camposDinamicos.add(datePicker);
-
-        return panel;
     }
 }

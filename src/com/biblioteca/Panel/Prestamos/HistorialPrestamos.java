@@ -1,4 +1,4 @@
-package com.biblioteca.acciones.Prestamos;
+package com.biblioteca.Panel.Prestamos;
 
 import com.biblioteca.base_datos.ConexionBaseDatos;
 

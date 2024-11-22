@@ -1,12 +1,10 @@
-package com.biblioteca.acciones.Usuarios;
+package com.biblioteca.Panel.Usuarios;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.controller.UsuarioController;
+import com.biblioteca.modelos.Usuario;
 
 import javax.swing.*;
 import java.awt.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.regex.Pattern;
 
@@ -17,7 +15,11 @@ public class EditarUsuario extends JPanel {
     private JComboBox<String> rolComboBox;
     private JButton actualizarButton, limpiarButton;
 
+    private UsuarioController usuarioController;
+
     public EditarUsuario() {
+        usuarioController = new UsuarioController();
+
         setLayout(new BorderLayout(20, 20));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         setBackground(new Color(248, 249, 250));
@@ -66,11 +68,9 @@ public class EditarUsuario extends JPanel {
     }
 
     private void cargarUsuariosEnComboBox() {
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             PreparedStatement stmt = conn.prepareStatement("SELECT id FROM usuarios")) {
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                idUsuarioComboBox.addItem(rs.getString("id"));
+        try {
+            for (String id : usuarioController.obtenerTodosLosIDs()) {
+                idUsuarioComboBox.addItem(id);
             }
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al cargar usuarios: " + ex.getMessage());
@@ -81,19 +81,15 @@ public class EditarUsuario extends JPanel {
         String idUsuario = (String) idUsuarioComboBox.getSelectedItem();
         if (idUsuario == null || idUsuario.isEmpty()) return;
 
-        try (Connection conn = ConexionBaseDatos.getConexion()) {
-            String sql = "SELECT * FROM usuarios WHERE id = ?";
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, idUsuario);
-
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                nombreField.setText(rs.getString("nombre"));
-                emailField.setText(rs.getString("email"));
-                rolComboBox.setSelectedItem(rs.getString("rol"));
-                passwordField.setText(rs.getString("contraseña"));
-                telefonoField.setText(rs.getString("telefono"));
-                direccionField.setText(rs.getString("direccion"));
+        try {
+            Usuario usuario = usuarioController.obtenerUsuarioPorID(idUsuario);
+            if (usuario != null) {
+                nombreField.setText(usuario.getNombre());
+                emailField.setText(usuario.getEmail());
+                rolComboBox.setSelectedItem(usuario.getRol());
+                passwordField.setText(usuario.getContraseña());
+                telefonoField.setText(usuario.getTelefono());
+                direccionField.setText(usuario.getDireccion());
 
                 habilitarCampos(true);
                 actualizarButton.setEnabled(true);
@@ -110,42 +106,37 @@ public class EditarUsuario extends JPanel {
         String idUsuario = (String) idUsuarioComboBox.getSelectedItem();
         if (!validarFormulario()) return;
 
-        try (Connection conn = ConexionBaseDatos.getConexion()) {
-            String sql = "UPDATE usuarios SET nombre = ?, email = ?, rol = ?, contraseña = ?, telefono = ?, direccion = ? WHERE id = ?";
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, nombreField.getText().trim());
-            stmt.setString(2, emailField.getText().trim());
-            stmt.setString(3, (String) rolComboBox.getSelectedItem());
-            stmt.setString(4, new String(passwordField.getPassword()).trim());
-            stmt.setString(5, telefonoField.getText().trim());
-            stmt.setString(6, direccionField.getText().trim());
-            stmt.setString(7, idUsuario);
+        try {
+            Usuario usuario = new Usuario();
+            usuario.setId(idUsuario);
+            usuario.setNombre(nombreField.getText().trim());
+            usuario.setEmail(emailField.getText().trim());
+            usuario.setRol((String) rolComboBox.getSelectedItem());
+            usuario.setContraseña(new String(passwordField.getPassword()).trim());
+            usuario.setTelefono(telefonoField.getText().trim());
+            usuario.setDireccion(direccionField.getText().trim());
 
-            int filasAfectadas = stmt.executeUpdate();
-            if (filasAfectadas > 0) {
-                JOptionPane.showMessageDialog(this, "Usuario actualizado exitosamente.");
-                limpiarFormulario();
-            } else {
-                JOptionPane.showMessageDialog(this, "No se pudo actualizar el usuario.");
-            }
+            usuarioController.actualizarUsuario(usuario);
+            JOptionPane.showMessageDialog(this, "Usuario actualizado exitosamente.");
+            limpiarFormulario();
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al actualizar usuario: " + ex.getMessage());
         }
     }
-    
-        private void agregarFormatoTelefonoSimple(JTextField campoTelefono) {
+
+    private void agregarFormatoTelefonoSimple(JTextField campoTelefono) {
         campoTelefono.addKeyListener(new java.awt.event.KeyAdapter() {
             @Override
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 String texto = campoTelefono.getText();
-                texto = texto.replaceAll("[^\\d]", ""); // Elimina caracteres no numéricos
+                texto = texto.replaceAll("[^\\d]", "");
 
                 if (texto.length() > 4) {
-                    texto = texto.substring(0, 4) + "-" + texto.substring(4); // Añade el guion después del 4º dígito
+                    texto = texto.substring(0, 4) + "-" + texto.substring(4);
                 }
 
                 if (texto.length() > 9) {
-                    texto = texto.substring(0, 9); // Limita a 8 dígitos más el guion
+                    texto = texto.substring(0, 9);
                 }
 
                 campoTelefono.setText(texto);

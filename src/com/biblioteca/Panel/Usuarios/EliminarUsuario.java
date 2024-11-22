@@ -1,14 +1,15 @@
-package com.biblioteca.acciones.Usuarios;
+package com.biblioteca.Panel.Usuarios;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.controller.UsuarioController;
+import com.biblioteca.modelos.Usuario;
 
 import javax.swing.*;
 import java.awt.*;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
+/**
+ * Panel para eliminar un usuario existente.
+ */
 public class EliminarUsuario extends JPanel {
     private JComboBox<String> idUsuarioComboBox;
     private JTextField nombreField, emailField, telefonoField, direccionField, fechaNacimientoField, fechaRegistroField;
@@ -18,7 +19,11 @@ public class EliminarUsuario extends JPanel {
     private final Font FUENTE_PRINCIPAL = new Font("Segoe UI", Font.PLAIN, 14);
     private final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 24);
 
+    private UsuarioController usuarioController;
+
     public EliminarUsuario() {
+        usuarioController = new UsuarioController();
+
         setLayout(new BorderLayout(20, 20));
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         setBackground(FONDO_LATERAL);
@@ -83,10 +88,7 @@ public class EliminarUsuario extends JPanel {
         campo.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         campo.setPreferredSize(new Dimension(200, 30));
         campo.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200)));
-
-        if (campo instanceof JTextField) {
-            ((JTextField) campo).setEnabled(!soloLectura);
-        }
+        campo.setEnabled(false);
 
         panel.add(label, BorderLayout.WEST);
         panel.add(campo, BorderLayout.CENTER);
@@ -119,11 +121,9 @@ public class EliminarUsuario extends JPanel {
     }
 
     private void cargarUsuariosEnComboBox() {
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             PreparedStatement stmt = conn.prepareStatement("SELECT id FROM usuarios")) {
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                idUsuarioComboBox.addItem(rs.getString("id"));
+        try {
+            for (String id : usuarioController.obtenerTodosLosIDs()) {
+                idUsuarioComboBox.addItem(id);
             }
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al cargar usuarios: " + ex.getMessage());
@@ -137,19 +137,15 @@ public class EliminarUsuario extends JPanel {
             return;
         }
 
-        try (Connection conn = ConexionBaseDatos.getConexion()) {
-            String sql = "SELECT * FROM usuarios WHERE id = ?";
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setString(1, idUsuario);
-
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                nombreField.setText(rs.getString("nombre"));
-                emailField.setText(rs.getString("email"));
-                telefonoField.setText(rs.getString("telefono"));
-                direccionField.setText(rs.getString("direccion"));
-                fechaNacimientoField.setText(rs.getString("fecha_nacimiento"));
-                fechaRegistroField.setText(rs.getString("fecha_registro"));
+        try {
+            Usuario usuario = usuarioController.obtenerUsuarioPorID(idUsuario);
+            if (usuario != null) {
+                nombreField.setText(usuario.getNombre());
+                emailField.setText(usuario.getEmail());
+                telefonoField.setText(usuario.getTelefono());
+                direccionField.setText(usuario.getDireccion());
+                fechaNacimientoField.setText(usuario.getFechaNacimiento().toString());
+                fechaRegistroField.setText(usuario.getFechaRegistro().toString());
             } else {
                 JOptionPane.showMessageDialog(this, "Usuario no encontrado.");
                 limpiarCampos();
@@ -173,19 +169,11 @@ public class EliminarUsuario extends JPanel {
                 JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            try (Connection conn = ConexionBaseDatos.getConexion()) {
-                String deleteQuery = "DELETE FROM usuarios WHERE id = ?";
-                PreparedStatement deleteStmt = conn.prepareStatement(deleteQuery);
-                deleteStmt.setString(1, idUsuario);
-
-                int rowsAffected = deleteStmt.executeUpdate();
-                if (rowsAffected > 0) {
-                    JOptionPane.showMessageDialog(this, "Usuario eliminado exitosamente.");
-                    idUsuarioComboBox.removeItem(idUsuario); // Eliminar del combo box
-                    limpiarCampos();
-                } else {
-                    JOptionPane.showMessageDialog(this, "No se pudo eliminar el usuario.");
-                }
+            try {
+                usuarioController.eliminarUsuario(idUsuario);
+                JOptionPane.showMessageDialog(this, "Usuario eliminado exitosamente.");
+                idUsuarioComboBox.removeItem(idUsuario);
+                limpiarCampos();
             } catch (SQLException ex) {
                 JOptionPane.showMessageDialog(this, "Error al eliminar usuario: " + ex.getMessage());
             }

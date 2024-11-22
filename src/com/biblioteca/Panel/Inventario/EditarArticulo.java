@@ -1,14 +1,15 @@
-package com.biblioteca.Inventario;
+package com.biblioteca.Panel.Inventario;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
-import com.biblioteca.utilidades.DateLabelFormatter;
+import com.biblioteca.controller.InventarioController;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.sql.*;
+import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class EditarArticulo extends JPanel {
     private JComboBox<String> tablasComboBox;
@@ -18,6 +19,7 @@ public class EditarArticulo extends JPanel {
     private String tablaSeleccionada;
     private JTable tablaDatos;
     private DefaultTableModel tableModel;
+    private InventarioController inventarioController = new InventarioController();
 
     private final Color botonCargarTabla = new Color(34, 139, 34);
     private final Color botonCargarTablaHover = new Color(0, 100, 0);
@@ -101,18 +103,16 @@ public class EditarArticulo extends JPanel {
         cargarTablasExistentes();
     }
 
-    // Carga las tablas existentes en el ComboBox
+    // Carga las tablas existentes en el ComboBox.
+    
     private void cargarTablasExistentes() {
         tablasComboBox.removeAllItems();
         addDefaultItem(tablasComboBox, "Opciones");
 
-        String query = "SELECT nombre FROM tipos_documentos";
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-
-            while (rs.next()) {
-                tablasComboBox.addItem(rs.getString("nombre"));
+        try {
+            List<String> tablas = inventarioController.obtenerFormularios();
+            for (String tabla : tablas) {
+                tablasComboBox.addItem(tabla);
             }
 
             if (tablasComboBox.getItemCount() == 1) {
@@ -123,99 +123,87 @@ public class EditarArticulo extends JPanel {
         }
     }
 
-    // Carga los datos de la tabla seleccionada
-    private void cargarTabla() {
-        tablaSeleccionada = (String) tablasComboBox.getSelectedItem();
-        if (tablaSeleccionada == null || tablaSeleccionada.equals("Opciones")) {
-            JOptionPane.showMessageDialog(this, "Seleccione una opción válida.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+    // Carga los datos de la tabla seleccionada en el JTable.
+   private void cargarTabla() {
+    tablaSeleccionada = (String) tablasComboBox.getSelectedItem();
+    if (tablaSeleccionada == null || tablaSeleccionada.equals("Opciones")) {
+        JOptionPane.showMessageDialog(this, "Seleccione una opción válida.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    formularioPanel.removeAll();
+    actualizarButton.setEnabled(false);
+    idArticuloMap.clear();
+
+    try {
+        List<Map<String, String>> columnasInfo = inventarioController.obtenerColumnasTabla(tablaSeleccionada);
+        tableModel = new DefaultTableModel();
+        HashMap<String, String> columnNameMap = new HashMap<>();
+
+        for (Map<String, String> columnaInfo : columnasInfo) {
+            String nombreColumna = columnaInfo.get("Field");
+            String displayName = nombreColumna.equalsIgnoreCase("ubicacion_fisica") ? "Ubicación Física" :
+                    (nombreColumna.toLowerCase().startsWith("id_") ? "ID" : nombreColumna);
+
+            idArticuloMap.put(displayName, nombreColumna);
+            tableModel.addColumn(displayName);
+            columnNameMap.put(displayName, nombreColumna);
+        }
+
+        if (!idArticuloMap.containsKey("ID")) {
+            JOptionPane.showMessageDialog(this, "No se encontró una columna ID en la tabla seleccionada.",
+                    "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        formularioPanel.removeAll();
-        actualizarButton.setEnabled(false);
-        idArticuloMap.clear();
+        List<Map<String, Object>> datos = inventarioController.obtenerDatosTabla(tablaSeleccionada);
+        for (Map<String, Object> fila : datos) {
+            Object[] rowData = new Object[tableModel.getColumnCount()];
+            int i = 0;
 
-        String describeQuery = "DESCRIBE " + tablaSeleccionada;
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             PreparedStatement stmt = conn.prepareStatement(describeQuery);
-             ResultSet rs = stmt.executeQuery()) {
-
-            tableModel = new DefaultTableModel();
-            HashMap<String, String> columnNameMap = new HashMap<>();
-
-            while (rs.next()) {
-                String nombreColumna = rs.getString("Field");
-                String displayName = nombreColumna;
-
-                if (nombreColumna.equalsIgnoreCase("ubicacion_fisica")) {
-                    displayName = "Ubicación Física";
-                } else if (nombreColumna.toLowerCase().startsWith("id_")) {
-                    displayName = "ID";
-                }
-
-                // Mapear todos los nombres de columnas, incluyendo ID y otros campos
-                idArticuloMap.put(displayName, nombreColumna);
-
-                tableModel.addColumn(displayName);
-                columnNameMap.put(displayName, nombreColumna);
+            // Ajuste para Java 8
+            for (int colIndex = 0; colIndex < tableModel.getColumnCount(); colIndex++) {
+                String columnName = tableModel.getColumnName(colIndex);
+                String realColumnName = columnNameMap.get(columnName);
+                rowData[i++] = fila.get(realColumnName);
             }
-
-            if (!idArticuloMap.containsKey("ID")) {
-                JOptionPane.showMessageDialog(this, "No se encontró una columna ID en la tabla seleccionada.",
-                        "Advertencia", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            String dataQuery = "SELECT * FROM " + tablaSeleccionada;
-            try (PreparedStatement dataStmt = conn.prepareStatement(dataQuery);
-                 ResultSet dataRs = dataStmt.executeQuery()) {
-
-                while (dataRs.next()) {
-                    Object[] rowData = new Object[tableModel.getColumnCount()];
-                    for (int i = 0; i < tableModel.getColumnCount(); i++) {
-                        String columnName = tableModel.getColumnName(i);
-                        String realColumnName = columnNameMap.get(columnName);
-
-                        rowData[i] = dataRs.getString(realColumnName);
-                    }
-                    tableModel.addRow(rowData);
-                }
-            }
-
-            tablaDatos = new JTable(tableModel) {
-                @Override
-                public boolean isCellEditable(int row, int column) {
-                    return !getColumnName(column).equalsIgnoreCase("ID");
-                }
-            };
-            tablaDatos.setFont(new Font("Arial", Font.PLAIN, 14));
-            tablaDatos.setRowHeight(25);
-            tablaDatos.setFillsViewportHeight(true);
-            tablaDatos.getTableHeader().setReorderingAllowed(false);
-            tablaDatos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-            tablaDatos.getSelectionModel().addListSelectionListener(event -> {
-                if (!event.getValueIsAdjusting() && tablaDatos.getSelectedRow() != -1) {
-                    actualizarButton.setEnabled(true);
-                } else {
-                    actualizarButton.setEnabled(false);
-                }
-            });
-
-            JScrollPane tableScrollPane = new JScrollPane(tablaDatos);
-            formularioPanel.add(tableScrollPane, BorderLayout.CENTER);
-            formularioPanel.revalidate();
-            formularioPanel.repaint();
-
-            JOptionPane.showMessageDialog(this, "Datos cargados exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error al cargar datos de la tabla: " + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
+            tableModel.addRow(rowData);
         }
-    }
 
-    // Abre el formulario para actualizar un artículo
+        tablaDatos = new JTable(tableModel) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return !getColumnName(column).equalsIgnoreCase("ID");
+            }
+        };
+        tablaDatos.setFont(new Font("Arial", Font.PLAIN, 14));
+        tablaDatos.setRowHeight(25);
+        tablaDatos.setFillsViewportHeight(true);
+        tablaDatos.getTableHeader().setReorderingAllowed(false);
+        tablaDatos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        tablaDatos.getSelectionModel().addListSelectionListener(event -> {
+            if (!event.getValueIsAdjusting() && tablaDatos.getSelectedRow() != -1) {
+                actualizarButton.setEnabled(true);
+            } else {
+                actualizarButton.setEnabled(false);
+            }
+        });
+
+        JScrollPane tableScrollPane = new JScrollPane(tablaDatos);
+        formularioPanel.add(tableScrollPane, BorderLayout.CENTER);
+        formularioPanel.revalidate();
+        formularioPanel.repaint();
+
+        JOptionPane.showMessageDialog(this, "Datos cargados exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+
+    } catch (SQLException ex) {
+        JOptionPane.showMessageDialog(this, "Error al cargar datos de la tabla: " + ex.getMessage(),
+                "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+
+    // Abre el formulario para editar un artículo seleccionado.
     private void abrirFormularioEdicion() {
         int filaSeleccionada = tablaDatos.getSelectedRow();
         if (filaSeleccionada == -1) {
@@ -228,7 +216,7 @@ public class EditarArticulo extends JPanel {
         dialogoActualizacion.setSize(600, 500);
         dialogoActualizacion.setLocationRelativeTo(this);
 
-        // Estilo del panel de edición
+        // Panel de edición
         JPanel panelEdicion = new JPanel(new GridBagLayout());
         panelEdicion.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(new Color(70, 130, 180), 2),
@@ -247,15 +235,15 @@ public class EditarArticulo extends JPanel {
         for (int i = 0; i < tablaDatos.getColumnCount(); i++) {
             String columnName = tablaDatos.getColumnName(i);
 
-            JLabel etiqueta = new JLabel(columnName + ":");
+            JLabel etiqueta = createStyledLabel(columnName + ":");
             etiqueta.setFont(new Font("Arial", Font.BOLD, 14));
-            etiqueta.setForeground(new Color(25, 25, 112)); // Navy color
+            etiqueta.setForeground(new Color(25, 25, 112));
             gbc.gridx = 0;
             gbc.gridy = i;
             gbc.weightx = 0.3;
             panelEdicion.add(etiqueta, gbc);
 
-            JTextField campoTexto = new JTextField((String) tablaDatos.getValueAt(filaSeleccionada, i), 20);
+            JTextField campoTexto = new JTextField(tablaDatos.getValueAt(filaSeleccionada, i).toString(), 20);
             campoTexto.setFont(new Font("Arial", Font.PLAIN, 14));
             campoTexto.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
@@ -268,7 +256,7 @@ public class EditarArticulo extends JPanel {
             camposEdicion.put(columnName, campoTexto);
         }
 
-        // Panel de botones con estilo
+        // Panel de botones
         JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
         panelBotones.setBackground(Color.WHITE);
 
@@ -277,7 +265,7 @@ public class EditarArticulo extends JPanel {
 
         // Estilo para el botón "Guardar"
         guardarButton.setFont(new Font("Arial", Font.BOLD, 14));
-        guardarButton.setBackground(new Color(34, 139, 34)); // Forest Green
+        guardarButton.setBackground(new Color(34, 139, 34));
         guardarButton.setForeground(Color.WHITE);
         guardarButton.setFocusPainted(false);
         guardarButton.setPreferredSize(new Dimension(100, 40));
@@ -285,17 +273,17 @@ public class EditarArticulo extends JPanel {
         // Efecto hover para "Guardar"
         guardarButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                guardarButton.setBackground(new Color(0, 100, 0)); // Dark Green
+                guardarButton.setBackground(new Color(0, 100, 0));
             }
 
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                guardarButton.setBackground(new Color(34, 139, 34)); // Forest Green
+                guardarButton.setBackground(new Color(34, 139, 34));
             }
         });
 
         // Estilo para el botón "Cancelar"
         cancelarButton.setFont(new Font("Arial", Font.BOLD, 14));
-        cancelarButton.setBackground(new Color(178, 34, 34)); // Firebrick
+        cancelarButton.setBackground(new Color(178, 34, 34));
         cancelarButton.setForeground(Color.WHITE);
         cancelarButton.setFocusPainted(false);
         cancelarButton.setPreferredSize(new Dimension(100, 40));
@@ -303,11 +291,11 @@ public class EditarArticulo extends JPanel {
         // Efecto hover para "Cancelar"
         cancelarButton.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
-                cancelarButton.setBackground(new Color(139, 0, 0)); // Dark Red
+                cancelarButton.setBackground(new Color(139, 0, 0));
             }
 
             public void mouseExited(java.awt.event.MouseEvent evt) {
-                cancelarButton.setBackground(new Color(178, 34, 34)); // Firebrick
+                cancelarButton.setBackground(new Color(178, 34, 34));
             }
         });
 
@@ -329,67 +317,63 @@ public class EditarArticulo extends JPanel {
         panelBotones.add(guardarButton);
         panelBotones.add(cancelarButton);
 
-        // Agregar los paneles al diálogo
+        // Agregar paneles al diálogo
         dialogoActualizacion.add(panelEdicion, BorderLayout.CENTER);
         dialogoActualizacion.add(panelBotones, BorderLayout.SOUTH);
         dialogoActualizacion.setVisible(true);
     }
 
-
-    // Actualiza los datos en la base de datos
+    // Actualiza los datos en la base de datos.
     private void actualizarEnBaseDeDatos(int filaSeleccionada, HashMap<String, JTextField> camposEdicion) throws SQLException {
         if (!validarDatos(camposEdicion)) {
             return; // Si los datos no son válidos, detiene el proceso
         }
 
         String idColumna = idArticuloMap.get("ID");
-        String idValor = (String) tablaDatos.getValueAt(filaSeleccionada, 0);
+        String idValor = tablaDatos.getValueAt(filaSeleccionada, 0).toString();
 
-        StringBuilder sql = new StringBuilder("UPDATE ").append(tablaSeleccionada).append(" SET ");
-        for (int i = 0; i < tablaDatos.getColumnCount(); i++) {
-            String columnName = tablaDatos.getColumnName(i);
-            if (columnName.equalsIgnoreCase("ID")) {
-                continue;
-            }
-
-            String realColumnName = idArticuloMap.getOrDefault(columnName, columnName);
-            sql.append("`").append(realColumnName).append("` = ?, ");
-        }
-        sql.setLength(sql.length() - 2); // Eliminar la última coma
-        sql.append(" WHERE `").append(idColumna).append("` = ?");
-
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             PreparedStatement updateStmt = conn.prepareStatement(sql.toString())) {
-
-            int paramIndex = 1;
-            for (int i = 0; i < tablaDatos.getColumnCount(); i++) {
-                String columnName = tablaDatos.getColumnName(i);
-                if (columnName.equalsIgnoreCase("ID")) {
-                    continue;
-                }
-
+        Map<String, String> datos = new HashMap<>();
+        for (String columnName : camposEdicion.keySet()) {
+            if (!columnName.equalsIgnoreCase("ID")) {
                 String realColumnName = idArticuloMap.getOrDefault(columnName, columnName);
                 String value = camposEdicion.get(columnName).getText().trim();
-                updateStmt.setString(paramIndex++, value);
+                datos.put(realColumnName, value);
             }
-
-            updateStmt.setString(paramIndex, idValor);
-
-            int filasAfectadas = updateStmt.executeUpdate();
-            if (filasAfectadas > 0) {
-                JOptionPane.showMessageDialog(this, "Artículo actualizado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-                cargarTabla();
-            } else {
-                JOptionPane.showMessageDialog(this, "No se actualizó ningún artículo.", "Información", JOptionPane.INFORMATION_MESSAGE);
-            }
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error SQL: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            throw ex; // Re-lanzar excepción para manejo superior si es necesario
         }
+
+        inventarioController.actualizarDatos(tablaSeleccionada, idColumna, idValor, datos);
+        JOptionPane.showMessageDialog(this, "Artículo actualizado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        cargarTabla();
     }
 
+    // Valida los datos antes de actualizar.
+    private boolean validarDatos(HashMap<String, JTextField> camposEdicion) {
+        for (String displayName : camposEdicion.keySet()) {
+            String realColumnName = idArticuloMap.get(displayName);
+            String value = camposEdicion.get(displayName).getText().trim();
 
-    // Crea un botón estilizado
+            // Validación específica para cantidad
+            if (realColumnName.equalsIgnoreCase("cantidad_disponible") || realColumnName.equalsIgnoreCase("cantidad_total")) {
+                if (!value.matches("\\d+")) {
+                    JOptionPane.showMessageDialog(this, "El campo " + displayName + " debe ser un número entero.", "Error de Validación", JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+            }
+
+            // Validación para fechas
+            if (realColumnName.equalsIgnoreCase("fecha_publicacion")) {
+                try {
+                    java.sql.Date.valueOf(value);
+                } catch (IllegalArgumentException e) {
+                    JOptionPane.showMessageDialog(this, "El campo " + displayName + " debe tener el formato YYYY-MM-DD.", "Error de Validación", JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Crea un botón estilizado con colores personalizados y efectos hover.
     private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
         JButton button = new JButton(text);
         button.setFont(new Font("Arial", Font.BOLD, 14));
@@ -409,7 +393,7 @@ public class EditarArticulo extends JPanel {
         return button;
     }
 
-    // Crea una etiqueta estilizada
+    // Crea una etiqueta estilizada con colores y fuentes personalizadas.
     private JLabel createStyledLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Arial", Font.BOLD, 14));
@@ -417,7 +401,7 @@ public class EditarArticulo extends JPanel {
         return label;
     }
 
-    // Crea un ComboBox estilizado
+    // Crea un ComboBox estilizado con bordes y fuentes personalizadas.
     private JComboBox<String> createStyledComboBox() {
         JComboBox<String> comboBox = new JComboBox<>();
         comboBox.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -425,42 +409,16 @@ public class EditarArticulo extends JPanel {
         return comboBox;
     }
 
-    // Añade un elemento por defecto al ComboBox
+    // Añade un elemento predeterminado al ComboBox.
     private void addDefaultItem(JComboBox<String> comboBox, String defaultItem) {
-        if (comboBox.getItemCount() == 0) {
-            comboBox.addItem(defaultItem);
+        if (comboBox.getItemCount() == 0 || !comboBox.getItemAt(0).equals(defaultItem)) {
+            comboBox.insertItemAt(defaultItem, 0);
+            comboBox.setSelectedIndex(0);
         }
     }
 
-    // Formatea una cadena de texto
+    // Formatea una cadena de texto convirtiéndola a mayúsculas y reemplazando guiones bajos con espacios.
     private String formatString(String input) {
         return input.toUpperCase().replace("_", " ");
-    }
-
-    // Valida los datos antes de actualizar
-    private boolean validarDatos(HashMap<String, JTextField> camposEdicion) {
-        for (String displayName : camposEdicion.keySet()) {
-            String realColumnName = idArticuloMap.get(displayName);
-            String value = camposEdicion.get(displayName).getText().trim();
-
-            // Validación específica para cantidad
-            if (realColumnName.equalsIgnoreCase("cantidad_disponible") || realColumnName.equalsIgnoreCase("cantidad_total")) {
-                if (!value.matches("\\d+")) {
-                    JOptionPane.showMessageDialog(this, "El campo " + displayName + " debe ser un número entero.", "Error de Validación", JOptionPane.ERROR_MESSAGE);
-                    return false;
-                }
-            }
-
-            // Validación para fechas
-            if (realColumnName.equalsIgnoreCase("fecha_publicacion")) {
-                try {
-                    java.sql.Date.valueOf(value); // Validación implícita de formato
-                } catch (IllegalArgumentException e) {
-                    JOptionPane.showMessageDialog(this, "El campo " + displayName + " debe tener el formato YYYY-MM-DD.", "Error de Validación", JOptionPane.ERROR_MESSAGE);
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 }

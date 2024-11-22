@@ -1,4 +1,4 @@
-package com.biblioteca.interfaces;
+package com.biblioteca.interfaces.menus;
 
 import com.biblioteca.base_datos.ConexionBaseDatos;
 

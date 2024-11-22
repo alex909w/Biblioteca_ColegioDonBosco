@@ -1,12 +1,14 @@
 package com.biblioteca.Formularios;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.controller.FormularioController;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -14,13 +16,15 @@ import java.util.List;
 import java.util.Set;
 import javax.swing.border.TitledBorder;
 
+/**
+ * Panel para editar un formulario existente.
+ */
 public class EditarFormulario extends JPanel {
     private JComboBox<String> tablasComboBox;
     private JPanel columnasPanel;
     private JButton cargarTablaButton, actualizarTablaButton, agregarColumnaButton, cancelarButton;
-    private boolean usarExistente = false; // Flag para indicar si se usa tabla existente
+    private boolean usarExistente = false;
 
-    // Definición de colores para los botones
     private final Color botonCargarTabla = new Color(34, 139, 34); // Forest Green
     private final Color botonCargarTablaHover = new Color(0, 100, 0); // Dark Green
     private final Color botonActualizarTabla = new Color(255, 69, 0); // Orange Red
@@ -30,7 +34,6 @@ public class EditarFormulario extends JPanel {
     private final Color botonCancelar = new Color(220, 20, 60); // Crimson
     private final Color botonCancelarHover = new Color(178, 34, 34); // Firebrick
 
-    // Conjunto de columnas excluidas para una búsqueda eficiente
     private final Set<String> columnasExcluidasGenerales = new HashSet<>(Arrays.asList(
             "fecha_registro",
             "ubicacion_fisica",
@@ -39,6 +42,11 @@ public class EditarFormulario extends JPanel {
             "estado",
             "palabras_clave"
     ));
+
+    private FormularioController formularioController = new FormularioController();
+
+    private List<JTextField> camposDinamicos = new ArrayList<>();
+    private List<JTextField> nuevasColumnas = new ArrayList<>();
 
     public EditarFormulario() {
         setLayout(new BorderLayout());
@@ -51,14 +59,14 @@ public class EditarFormulario extends JPanel {
                 new Color(70, 130, 180)
         ));
 
-        // Panel superior con configuraciones (usando GridBagLayout)
+        // Panel superior con configuraciones
         JPanel configuracionPanel = new JPanel(new GridBagLayout());
         configuracionPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Fila 1: Selección de Tabla
+        // Selección de Tabla
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
@@ -76,12 +84,7 @@ public class EditarFormulario extends JPanel {
         gbc.weightx = 0.2;
         configuracionPanel.add(cargarTablaButton = createStyledButton("Cargar Tabla", botonCargarTabla, botonCargarTablaHover), gbc);
 
-        cargarTablaButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                cargarColumnas();
-            }
-        });
+        cargarTablaButton.addActionListener(e -> cargarColumnas());
 
         add(configuracionPanel, BorderLayout.NORTH);
 
@@ -101,7 +104,7 @@ public class EditarFormulario extends JPanel {
         ));
         add(scrollPanel, BorderLayout.CENTER);
 
-        // Panel inferior para los botones "Actualizar", "Agregar Nueva Columna" y "Cancelar"
+        // Panel inferior para los botones
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 15));
 
         // Botón "Actualizar Tabla"
@@ -122,38 +125,11 @@ public class EditarFormulario extends JPanel {
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
-    private List<JTextField> camposDinamicos = new ArrayList<>(); // Lista para almacenar los campos dinámicos
-    private List<JTextField> nuevasColumnas = new ArrayList<>(); // Lista para nuevas columnas
-
-    private void cargarTablasExistentes() {
-        tablasComboBox.removeAllItems(); // Limpiar el ComboBox antes de cargar
-
-        // Añadir el elemento predeterminado
-        tablasComboBox.addItem("Opciones");
-
-        String query = "SELECT nombre FROM tipos_documentos"; // Consulta para obtener los nombres de las tablas
-
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-
-            while (rs.next()) {
-                tablasComboBox.addItem(rs.getString("nombre"));
-            }
-
-            if (tablasComboBox.getItemCount() == 1) { // Solo el elemento predeterminado
-                JOptionPane.showMessageDialog(this, "No se encontraron tablas registradas en 'tipos_documentos'.", "Información", JOptionPane.INFORMATION_MESSAGE);
-            }
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error al cargar tablas desde 'tipos_documentos': " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
     private void cargarColumnas() {
         columnasPanel.removeAll();
         camposDinamicos.clear();
         nuevasColumnas.clear();
-        usarExistente = false; // Resetear el flag
+        usarExistente = false;
 
         String nombreTabla = (String) tablasComboBox.getSelectedItem();
         if (nombreTabla == null || nombreTabla.equals("Opciones")) {
@@ -161,30 +137,17 @@ public class EditarFormulario extends JPanel {
             return;
         }
 
-        // Validación del nombre de la tabla
         if (!nombreTabla.matches("[a-zA-Z0-9_]+")) {
             JOptionPane.showMessageDialog(this, "El nombre de la tabla contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Definir el nombre del id_columna dinámico
         String idColumna = "id_" + nombreTabla.toLowerCase();
 
-        try (Connection conn = obtenerConexion();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("DESCRIBE `" + nombreTabla + "`")) {
-
-            while (rs.next()) {
-                String campo = rs.getString("Field").trim();
-
-                // Excluir las columnas predeterminadas y el id_columna dinámico (insensible a mayúsculas)
-                if (columnasExcluidasGenerales.contains(campo.toLowerCase()) || campo.equalsIgnoreCase(idColumna)) {
-                    continue;
-                }
-
-                String tipo = rs.getString("Type");
-                String extra = rs.getString("Extra");
-
+        try {
+            List<String> columnas = formularioController.obtenerColumnas(nombreTabla);
+            for (String campo : columnas) {
+                String tipo = obtenerTipoColumna(nombreTabla, campo);
                 JPanel columnaPanel = new JPanel(new GridBagLayout());
                 columnaPanel.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
@@ -196,7 +159,7 @@ public class EditarFormulario extends JPanel {
                 gbcCol.insets = new Insets(5, 5, 5, 5);
                 gbcCol.fill = GridBagConstraints.HORIZONTAL;
 
-                // Etiqueta del campo (formateada)
+                // Etiqueta del campo
                 gbcCol.gridx = 0;
                 gbcCol.gridy = 0;
                 gbcCol.weightx = 0.4;
@@ -215,50 +178,108 @@ public class EditarFormulario extends JPanel {
                 camposDinamicos.add(nuevoNombreField);
                 columnasPanel.add(columnaPanel);
             }
-
-            // No es necesario agregar el botón aquí ya que ahora está en el panel inferior
-
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al cargar columnas: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace(); // Útil para depuración
+            ex.printStackTrace();
         }
 
         columnasPanel.revalidate();
         columnasPanel.repaint();
     }
 
-    // Método para obtener una conexión válida
-    private Connection obtenerConexion() throws SQLException {
-        Connection conn = ConexionBaseDatos.getConexion();
+    private String obtenerTipoColumna(String nombreTabla, String columna) throws SQLException {
+    String tipo = "VARCHAR(255)";
+    String sql = "DESCRIBE `" + nombreTabla + "`";
+
+    // Verifica conexión
+    try (Connection conn = formularioController.formularioDAO.getConexion()) {
         if (conn == null || conn.isClosed()) {
             throw new SQLException("La conexión a la base de datos no está disponible.");
         }
-        return conn;
+
+        // Verifica si la tabla existe
+        DatabaseMetaData metaData = conn.getMetaData();
+        try (ResultSet rsMeta = metaData.getTables(null, null, nombreTabla, null)) {
+            if (!rsMeta.next()) {
+                throw new SQLException("La tabla especificada no existe: " + nombreTabla);
+            }
+        }
+
+        // Ejecuta la consulta DESCRIBE
+        try (PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            // Filtra la columna deseada
+            while (rs.next()) {
+                if (rs.getString("Field").equalsIgnoreCase(columna)) {
+                    tipo = rs.getString("Type");
+                    break;
+                }
+            }
+        }
     }
 
-    // Método para crear el botón de "Agregar Nueva Columna"
-    private JButton crearBotonAgregarColumna() {
-        JButton agregarColumnaButton = new JButton("Agregar Nueva Columna");
-        agregarColumnaButton.setFont(new Font("Arial", Font.BOLD, 14));
-        agregarColumnaButton.setBackground(botonAgregarColumna);
-        agregarColumnaButton.setForeground(Color.WHITE);
-        agregarColumnaButton.setFocusPainted(false);
-        agregarColumnaButton.setBorder(BorderFactory.createLineBorder(Color.GRAY, 1));
-        agregarColumnaButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        agregarColumnaButton.setPreferredSize(new Dimension(180, 40));
+    return tipo; // Retorna el tipo de la columna o el valor predeterminado
+}
 
-        agregarColumnaButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                agregarColumnaButton.setBackground(botonAgregarColumnaHover);
+    private void actualizarTabla() {
+        String nombreTabla = (String) tablasComboBox.getSelectedItem();
+        if (nombreTabla == null || nombreTabla.isEmpty() || nombreTabla.equals("Opciones")) {
+            JOptionPane.showMessageDialog(this, "Por favor, seleccione una tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            for (JTextField nombreField : camposDinamicos) {
+                String nuevoNombre = nombreField.getText().trim();
+                String nombreActual = nombreField.getToolTipText();
+
+                if (!nuevoNombre.isEmpty() && !nuevoNombre.equalsIgnoreCase(nombreActual)) {
+                    if (!nuevoNombre.matches("[\\p{L}\\p{N}_ áéíóúÁÉÍÓÚñÑüÜ!@#$%^&*()+-=/]+")) {
+                        JOptionPane.showMessageDialog(this, "El nombre de la columna '" + nuevoNombre + "' contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+
+                    String nuevoNombreDB = sanitizeName(nuevoNombre);
+
+                    String idColumna = "id_" + nombreTabla.toLowerCase();
+                    if (nuevoNombreDB.equalsIgnoreCase(idColumna)) {
+                        JOptionPane.showMessageDialog(this, "No puedes renombrar otra columna al nombre de la columna ID ('" + idColumna + "').", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+
+                    String tipoDato = nuevoNombre.toLowerCase().contains("fecha") ? "DATE" : "VARCHAR(255)";
+                    formularioController.actualizarNombreColumna(nombreTabla, nombreActual, nuevoNombreDB, tipoDato);
+                }
             }
 
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                agregarColumnaButton.setBackground(botonAgregarColumna);
-            }
-        });
+            for (JTextField nuevaColumnaField : nuevasColumnas) {
+                String nuevoNombre = nuevaColumnaField.getText().trim();
 
-        agregarColumnaButton.addActionListener(e -> agregarNuevaColumna());
-        return agregarColumnaButton;
+                if (!nuevoNombre.isEmpty()) {
+                    if (!nuevoNombre.matches("[\\p{L}\\p{N}_ áéíóúÁÉÍÓÚñÑüÜ!@#$%^&*()+-=/]+")) {
+                        JOptionPane.showMessageDialog(this, "El nombre de la nueva columna '" + nuevoNombre + "' contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+
+                    String nuevoNombreDB = sanitizeName(nuevoNombre);
+                    String idColumna = "id_" + nombreTabla.toLowerCase();
+                    if (nuevoNombreDB.equalsIgnoreCase(idColumna)) {
+                        JOptionPane.showMessageDialog(this, "No puedes agregar una columna con el nombre de la columna ID ('" + idColumna + "').", "Error", JOptionPane.ERROR_MESSAGE);
+                        continue;
+                    }
+
+                    String tipoDato = nuevoNombre.toLowerCase().contains("fecha") ? "DATE" : "VARCHAR(255)";
+                    formularioController.agregarNuevaColumna(nombreTabla, nuevoNombreDB, tipoDato);
+                }
+            }
+
+            JOptionPane.showMessageDialog(this, "Tabla actualizada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            cargarColumnas();
+
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al actualizar la tabla: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void agregarNuevaColumna() {
@@ -293,116 +314,16 @@ public class EditarFormulario extends JPanel {
         columnasPanel.repaint();
     }
 
-    private void actualizarTabla() {
-        String nombreTabla = (String) tablasComboBox.getSelectedItem();
-        if (nombreTabla == null || nombreTabla.isEmpty() || nombreTabla.equals("Opciones")) {
-            JOptionPane.showMessageDialog(this, "Por favor, seleccione una tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // Definir el nombre del id_columna dinámico
-        String idColumna = "id_" + nombreTabla.toLowerCase();
-
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             Statement stmt = conn.createStatement()) {
-
-            // Modificar nombres de columnas existentes
-            for (JTextField nombreField : camposDinamicos) {
-                String nuevoNombre = nombreField.getText().trim();
-                String nombreActual = nombreField.getToolTipText();
-
-                if (!nuevoNombre.isEmpty() && !nuevoNombre.equalsIgnoreCase(nombreActual)) {
-                    // Validar el nuevo nombre (permitir caracteres especiales)
-                    if (!nuevoNombre.matches("[\\p{L}\\p{N}_ áéíóúÁÉÍÓÚñÑüÜ!@#$%^&*()+-=/]+")) { // Permitir caracteres especiales
-                        JOptionPane.showMessageDialog(this, "El nombre de la columna '" + nuevoNombre + "' contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
-                        continue;
-                    }
-
-                    // Sanitizar el nuevo nombre
-                    String nuevoNombreDB = sanitizeName(nuevoNombre);
-
-                    // Verificar que el nuevo nombre no sea la columna ID
-                    if (nuevoNombreDB.equalsIgnoreCase(idColumna)) {
-                        JOptionPane.showMessageDialog(this, "No puedes renombrar otra columna al nombre de la columna ID ('" + idColumna + "').", "Error", JOptionPane.ERROR_MESSAGE);
-                        continue;
-                    }
-
-                    // Detectar si el nuevo nombre contiene "fecha" para asignar tipo de dato
-                    String tipoDato;
-                    if (nuevoNombre.toLowerCase().contains("fecha")) {
-                        tipoDato = "DATE";
-                    } else {
-                        tipoDato = "VARCHAR(255)";
-                    }
-
-                    String sql = "ALTER TABLE `" + nombreTabla + "` CHANGE `" + nombreActual + "` `" + nuevoNombreDB + "` " + tipoDato;
-                    stmt.executeUpdate(sql);
-                }
-            }
-
-            // Agregar nuevas columnas
-            for (JTextField nuevaColumnaField : nuevasColumnas) {
-                String nuevoNombre = nuevaColumnaField.getText().trim();
-
-                if (!nuevoNombre.isEmpty()) {
-                    // Validar el nuevo nombre (permitir caracteres especiales)
-                    if (!nuevoNombre.matches("[\\p{L}\\p{N}_ áéíóúÁÉÍÓÚñÑüÜ!@#$%^&*()+-=/]+")) { // Permitir caracteres especiales
-                        JOptionPane.showMessageDialog(this, "El nombre de la nueva columna '" + nuevoNombre + "' contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
-                        continue;
-                    }
-
-                    // Sanitizar el nuevo nombre
-                    String nuevoNombreDB = sanitizeName(nuevoNombre);
-
-                    // Verificar que el nuevo nombre no sea la columna ID
-                    if (nuevoNombreDB.equalsIgnoreCase(idColumna)) {
-                        JOptionPane.showMessageDialog(this, "No puedes agregar una columna con el nombre de la columna ID ('" + idColumna + "').", "Error", JOptionPane.ERROR_MESSAGE);
-                        continue;
-                    }
-
-                    // Detectar si el nuevo nombre contiene "fecha" para asignar tipo de dato
-                    String tipoDato;
-                    if (nuevoNombre.toLowerCase().contains("fecha")) {
-                        tipoDato = "DATE";
-                    } else {
-                        tipoDato = "VARCHAR(255)";
-                    }
-
-                    String sql;
-                    if (tipoDato.equals("DATE")) {
-                        sql = "ALTER TABLE `" + nombreTabla + "` ADD `" + nuevoNombreDB + "` DATE";
-                    } else {
-                        sql = "ALTER TABLE `" + nombreTabla + "` ADD `" + nuevoNombreDB + "` VARCHAR(255)";
-                    }
-                    stmt.executeUpdate(sql);
-                }
-            }
-
-            JOptionPane.showMessageDialog(this, "Tabla actualizada exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-
-            // Recargar columnas para reflejar cambios
-            cargarColumnas();
-
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error al actualizar la tabla: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    // Método para cancelar acciones
     private void cancelarAccion() {
-        // Limpiar el panel central
         columnasPanel.removeAll();
         columnasPanel.revalidate();
         columnasPanel.repaint();
 
-        // Restablecer el JComboBox al estado predeterminado
         tablasComboBox.setSelectedIndex(0);
 
-        // Mostrar mensaje al usuario
         JOptionPane.showMessageDialog(this, "Actualización Cancelada.", "Información", JOptionPane.INFORMATION_MESSAGE);
     }
 
-    // Método para sanitizar nombres: reemplazar espacios con guiones bajos
     private String sanitizeName(String name) {
         return name.trim().replaceAll(" +", "_");
     }
@@ -447,19 +368,33 @@ public class EditarFormulario extends JPanel {
         JTextField textField = new JTextField();
         textField.setFont(new Font("Arial", Font.PLAIN, 14));
         textField.setBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 1));
-        textField.setBackground(Color.WHITE); // Fondo blanco para mejor contraste
+        textField.setBackground(Color.WHITE);
         return textField;
     }
 
-    // Método para formatear strings: convertir a mayúsculas y reemplazar guiones bajos con espacios
     private String formatString(String input) {
         return input.toUpperCase().replace("_", " ");
     }
 
-    // Inicialización de componentes después de construir la interfaz
     @Override
     public void addNotify() {
         super.addNotify();
         cargarTablasExistentes();
+    }
+
+    private void cargarTablasExistentes() {
+        tablasComboBox.removeAllItems();
+        tablasComboBox.addItem("Opciones");
+        try {
+            List<String> tablas = formularioController.obtenerTablas();
+            for (String tabla : tablas) {
+                tablasComboBox.addItem(tabla);
+            }
+            if (tablas.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No se encontraron tablas registradas en 'tipos_documentos'.", "Información", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error al cargar tablas desde 'tipos_documentos': " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

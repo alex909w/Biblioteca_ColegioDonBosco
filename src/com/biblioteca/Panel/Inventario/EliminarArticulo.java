@@ -1,27 +1,34 @@
-package com.biblioteca.Inventario;
+// com/biblioteca/Inventario/EliminarArticulo.java
+
+package com.biblioteca.Panel.Inventario;
 
 import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.controller.InventarioController;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.sql.*;
-import java.util.HashMap;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 
 public class EliminarArticulo extends JPanel {
-    private JComboBox<String> tablasComboBox; // ComboBox para seleccionar tabla
+    private JComboBox<String> tablasComboBox;
     private JButton cargarTablaButton, eliminarButton;
     private JTable tablaDatos;
     private DefaultTableModel tableModel;
-    private String tablaSeleccionada; // Nombre de la tabla seleccionada
-    private String columnaID; // Nombre de la columna ID de la tabla seleccionada
+    private String tablaSeleccionada;
+    private String columnaID;
+    private InventarioController inventarioController = new InventarioController();
 
-    // Definición de colores para los botones
-    private final Color botonCargarTablaColor = new Color(34, 139, 34); // Forest Green
-    private final Color botonCargarTablaHover = new Color(0, 100, 0); // Dark Green
-    private final Color botonEliminarColor = new Color(220, 20, 60); // Crimson
-    private final Color botonEliminarHover = new Color(178, 34, 34); // Firebrick
+    private final Color botonCargarTablaColor = new Color(34, 139, 34);
+    private final Color botonCargarTablaHover = new Color(0, 100, 0);
+    private final Color botonEliminarColor = new Color(220, 20, 60);
+    private final Color botonEliminarHover = new Color(178, 34, 34);
 
     public EliminarArticulo() {
         setLayout(new BorderLayout(20, 20));
@@ -119,33 +126,27 @@ public class EliminarArticulo extends JPanel {
         cargarTablasExistentes();
     }
 
-    /**
-     * Carga los nombres de las tablas desde 'tipos_documentos' y los añade al ComboBox.
-     */
+    //Carga las tablas existentes en el ComboBox.
+    
     private void cargarTablasExistentes() {
-        tablasComboBox.removeAllItems();
-        // Añadir el elemento predeterminado "Opciones"
-        addDefaultItem(tablasComboBox, "Opciones");
+    tablasComboBox.removeAllItems();
+    tablasComboBox.addItem("Opciones"); // Agregar opción predeterminada directamente
 
-        String query = "SELECT nombre FROM tipos_documentos"; // Consulta para obtener los nombres de las tablas
-
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)) {
-
-            while (rs.next()) {
-                tablasComboBox.addItem(rs.getString("nombre"));
-            }
-
-            if (tablasComboBox.getItemCount() == 1) { // Solo el elemento predeterminado
-                JOptionPane.showMessageDialog(this, "No se encontraron tablas registradas en 'tipos_documentos'.", "Información", JOptionPane.INFORMATION_MESSAGE);
-            }
-        } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(this, "Error al cargar tablas desde 'tipos_documentos': " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    try {
+        List<String> tablas = inventarioController.obtenerFormularios();
+        for (String tabla : tablas) {
+            tablasComboBox.addItem(tabla);
         }
-    }
 
-   private void cargarTabla() {
+        if (tablasComboBox.getItemCount() == 1) {
+            JOptionPane.showMessageDialog(this, "No se encontraron tablas registradas en 'tipos_documentos'.", "Información", JOptionPane.INFORMATION_MESSAGE);
+        }
+    } catch (SQLException ex) {
+        JOptionPane.showMessageDialog(this, "Error al cargar tablas desde 'tipos_documentos': " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+
+    private void cargarTabla() {
     tablaSeleccionada = (String) tablasComboBox.getSelectedItem();
     if (tablaSeleccionada == null || tablaSeleccionada.equals("Opciones")) {
         JOptionPane.showMessageDialog(this, "Seleccione una opción válida.", "Advertencia", JOptionPane.WARNING_MESSAGE);
@@ -232,39 +233,8 @@ public class EliminarArticulo extends JPanel {
         JOptionPane.showMessageDialog(this, "Error al conectar a la base de datos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
 }
-
-
-    /**
-     * Obtiene el nombre real de la columna en la base de datos basado en el nombre mostrado en el JTable.
-     *
-     * @param tabla        Nombre de la tabla.
-     * @param displayName  Nombre mostrado en el JTable.
-     * @return Nombre real de la columna en la base de datos.
-     * @throws SQLException Si ocurre un error al acceder a los metadatos.
-     */
-    private String obtenerNombreColumnaReal(String tabla, String displayName) throws SQLException {
-        String query = "DESCRIBE " + tabla;
-        try (Connection conn = ConexionBaseDatos.getConexion();
-             PreparedStatement stmt = conn.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                String nombreColumna = rs.getString("Field");
-                String tipo = rs.getString("Type");
-                String key = rs.getString("Key");
-                String formattedName = formatString(nombreColumna);
-
-                if (formattedName.equalsIgnoreCase(displayName)) {
-                    return nombreColumna;
-                }
-            }
-        }
-        return displayName; // Retorna el nombre mostrado si no se encuentra una coincidencia
-    }
-
-    /**
-     * Elimina el artículo seleccionado en el JTable después de confirmar la acción.
-     */
+    
+    // Elimina el artículo seleccionado en el JTable después de confirmar la acción.
     private void eliminarArticulo() {
         int filaSeleccionada = tablaDatos.getSelectedRow();
         if (filaSeleccionada == -1) {
@@ -272,53 +242,23 @@ public class EliminarArticulo extends JPanel {
             return;
         }
 
-        String idArticulo = (String) tablaDatos.getValueAt(filaSeleccionada, 0); // Suponiendo que la columna ID es la primera
+        String idArticulo = tablaDatos.getValueAt(filaSeleccionada, 0).toString();
 
         int confirm = JOptionPane.showConfirmDialog(this, "¿Está seguro de que desea eliminar el artículo con ID: " + idArticulo + "?",
                 "Confirmar Eliminación", JOptionPane.YES_NO_OPTION);
 
         if (confirm == JOptionPane.YES_OPTION) {
-            try (Connection conn = ConexionBaseDatos.getConexion()) {
-                String sqlEliminar = "DELETE FROM " + tablaSeleccionada + " WHERE " + columnaID + " = ?";
-                PreparedStatement stmtEliminar = conn.prepareStatement(sqlEliminar);
-                stmtEliminar.setString(1, idArticulo);
-
-                int filasAfectadas = stmtEliminar.executeUpdate();
-                if (filasAfectadas > 0) {
-                    JOptionPane.showMessageDialog(this, "Artículo eliminado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-                    cargarTabla(); // Recargar la tabla para reflejar los cambios
-                } else {
-                    JOptionPane.showMessageDialog(this, "Artículo no encontrado o ya ha sido eliminado.", "Información", JOptionPane.INFORMATION_MESSAGE);
-                }
+            try {
+                inventarioController.eliminarRegistro(tablaSeleccionada, columnaID, idArticulo);
+                JOptionPane.showMessageDialog(this, "Artículo eliminado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                cargarTabla();
             } catch (SQLException ex) {
                 JOptionPane.showMessageDialog(this, "Error al eliminar el artículo: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    /**
-     * Método auxiliar para añadir un elemento predeterminado a un JComboBox si no está presente.
-     *
-     * @param comboBox    El ComboBox al que se añadirá el elemento.
-     * @param defaultItem El elemento predeterminado a añadir.
-     */
-    private void addDefaultItem(JComboBox<String> comboBox, String defaultItem) {
-        if (comboBox.getItemCount() == 0 || !comboBox.getItemAt(0).equals(defaultItem)) {
-            comboBox.insertItemAt(defaultItem, 0);
-            comboBox.setSelectedIndex(0);
-        }
-    }
-
-    // Métodos auxiliares para crear componentes estilizados
-
-    /**
-     * Crea un botón estilizado con colores personalizados y efectos hover.
-     *
-     * @param text         Texto del botón.
-     * @param defaultColor Color de fondo predeterminado.
-     * @param hoverColor   Color de fondo al pasar el cursor.
-     * @return El botón estilizado.
-     */
+    //Crea un botón estilizado con colores personalizados y efectos hover.
     private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
         JButton button = new JButton(text);
         button.setFont(new Font("Arial", Font.BOLD, 14));
@@ -341,24 +281,16 @@ public class EliminarArticulo extends JPanel {
         return button;
     }
 
-    /**
-     * Crea una etiqueta estilizada con colores y fuentes personalizadas.
-     *
-     * @param text Texto de la etiqueta.
-     * @return La etiqueta estilizada.
-     */
+    // Crea una etiqueta estilizada con colores y fuentes personalizadas.
+
     private JLabel createStyledLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Arial", Font.BOLD, 14));
-        label.setForeground(new Color(70, 130, 180)); // Steel Blue
+        label.setForeground(new Color(70, 130, 180));
         return label;
     }
 
-    /**
-     * Crea un ComboBox estilizado con bordes y fuentes personalizadas.
-     *
-     * @return El ComboBox estilizado.
-     */
+    //Crea un ComboBox estilizado con bordes y fuentes personalizadas.
     private JComboBox<String> createStyledComboBox() {
         JComboBox<String> comboBox = new JComboBox<>();
         comboBox.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -366,25 +298,7 @@ public class EliminarArticulo extends JPanel {
         return comboBox;
     }
 
-    /**
-     * Crea un campo de texto estilizado con bordes y fuentes personalizadas.
-     *
-     * @return El campo de texto estilizado.
-     */
-    private JTextField createStyledTextField() {
-        JTextField textField = new JTextField();
-        textField.setFont(new Font("Arial", Font.PLAIN, 14));
-        textField.setBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 1));
-        textField.setBackground(Color.WHITE); // Fondo blanco para mejor contraste
-        return textField;
-    }
-
-    /**
-     * Formatea una cadena de texto convirtiéndola a mayúsculas y reemplazando guiones bajos con espacios.
-     *
-     * @param input Cadena de entrada.
-     * @return Cadena formateada.
-     */
+    //Formatea una cadena de texto convirtiéndola a mayúsculas y reemplazando guiones bajos con espacios.
     private String formatString(String input) {
         return input.toUpperCase().replace("_", " ");
     }

@@ -1,11 +1,20 @@
-package com.biblioteca.interfaces;
+package com.biblioteca.interfaces.menus;
 
+<<<<<<< Updated upstream:src/com/biblioteca/interfaces/MenuAlumno.java
 import com.biblioteca.acciones.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.acciones.Prestamos.HistorialPrestamos;
 import com.biblioteca.acciones.Prestamos.ConsultarPrestamos;
 import com.biblioteca.acciones.Prestamos.GestionPrestamos;
 import com.biblioteca.acciones.Prestamos.RegistrarDevolucion;
+=======
+>>>>>>> Stashed changes:src/com/biblioteca/interfaces/menus/MenuAlumno.java
 
+
+import com.biblioteca.Panel.Prestamos.BuscarPorTituloAutorEstado;
+import com.biblioteca.Panel.Prestamos.ConsultarPrestamos;
+import com.biblioteca.Panel.Prestamos.GestionPrestamos;
+import com.biblioteca.Panel.Prestamos.HistorialPrestamos;
+import com.biblioteca.Panel.Prestamos.RegistrarDevolucion;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;

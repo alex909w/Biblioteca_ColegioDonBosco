@@ -1,10 +1,10 @@
 package com.biblioteca.Formularios;
 
-import com.biblioteca.base_datos.ConexionBaseDatos;
+import com.biblioteca.controller.FormularioController;
 
 import javax.swing.*;
 import java.awt.*;
-import java.sql.*;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.border.TitledBorder;
@@ -21,6 +21,7 @@ public class CrearFormulario extends JPanel {
     private final Color botonGenerarCamposHover = new Color(0, 100, 0); // Dark Green
 
     private List<JTextField> camposDinamicos = new ArrayList<>();
+    private FormularioController formularioController = new FormularioController();
 
     public CrearFormulario() {
         setLayout(new BorderLayout());
@@ -33,7 +34,7 @@ public class CrearFormulario extends JPanel {
                 new Color(70, 130, 180)
         ));
 
-        // Panel superior con configuraciones
+        // Panel superior con las configuraciones
         JPanel configuracionPanel = new JPanel(new GridBagLayout());
         configuracionPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -111,15 +112,10 @@ public class CrearFormulario extends JPanel {
             return;
         }
 
-        try (Connection conn = ConexionBaseDatos.getConexion()) {
-            String verificarRegistroSQL = "SELECT COUNT(*) AS total FROM tipos_documentos WHERE nombre = ?";
-            try (PreparedStatement psVerificar = conn.prepareStatement(verificarRegistroSQL)) {
-                psVerificar.setString(1, nombreTabla);
-                ResultSet rs = psVerificar.executeQuery();
-                if (rs.next() && rs.getInt("total") > 0) {
-                    JOptionPane.showMessageDialog(this, "El nombre del formulario ya existe en 'tipos_documentos'.");
-                    return;
-                }
+        try {
+            if (formularioController.verificarNombreExistente(nombreTabla)) {
+                JOptionPane.showMessageDialog(this, "El nombre del formulario ya existe en 'tipos_documentos'.");
+                return;
             }
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al verificar el nombre en 'tipos_documentos': " + e.getMessage());
@@ -175,55 +171,22 @@ public class CrearFormulario extends JPanel {
         }
 
         String nombreTablaDB = sanitizeName(nombreTabla);
-
-        try (Connection conn = ConexionBaseDatos.getConexion()) {
-            conn.setAutoCommit(false);
-
-            StringBuilder sql = new StringBuilder("CREATE TABLE `").append(nombreTablaDB).append("` (");
-
-            String idColumna = "id_" + nombreTablaDB.toLowerCase();
-            sql.append("`").append(idColumna).append("` VARCHAR(15) PRIMARY KEY, ");
-
-            for (JTextField campo : camposDinamicos) {
-                String nombreColumna = campo.getText().trim();
-                if (nombreColumna.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Los nombres de las columnas no pueden estar vacíos.");
-                    conn.rollback();
-                    return;
-                }
-                if (!nombreColumna.matches("[\\p{L}\\p{N}_ áéíóúÁÉÍÓÚñÑüÜ!@#$%^&*()+-=/]+")) { // Permitir caracteres especiales
-                    JOptionPane.showMessageDialog(this, "El nombre de la columna '" + nombreColumna + "' contiene caracteres inválidos.");
-                    conn.rollback();
-                    return;
-                }
-                String nombreColumnaDB = sanitizeName(nombreColumna);
-
-                // Detectar si el nombre de la columna contiene "fecha" (insensible a mayúsculas)
-                if (nombreColumna.toLowerCase().contains("fecha")) {
-                    sql.append("`").append(nombreColumnaDB).append("` DATE, ");
-                } else {
-                    sql.append("`").append(nombreColumnaDB).append("` VARCHAR(255), ");
-                }
+        List<String> nombresColumnas = new ArrayList<>();
+        for (JTextField campo : camposDinamicos) {
+            String nombreColumna = campo.getText().trim();
+            if (nombreColumna.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Los nombres de las columnas no pueden estar vacíos.");
+                return;
             }
-
-            // Añadir columnas predeterminadas
-            sql.append("`ubicacion_fisica` VARCHAR(255), ");
-            sql.append("`cantidad_disponible` INT DEFAULT 0, ");
-            sql.append("`cantidad_total` INT DEFAULT 0, ");
-            sql.append("`estado` ENUM('Bueno', 'Dañado', 'En Reparación') DEFAULT 'Bueno', ");
-            sql.append("`palabras_clave` TEXT);");
-
-            try (Statement stmt = conn.createStatement()) {
-                stmt.executeUpdate(sql.toString());
+            if (!nombreColumna.matches("[\\p{L}\\p{N}_ áéíóúÁÉÍÓÚñÑüÜ!@#$%^&*()+-=/]+")) {
+                JOptionPane.showMessageDialog(this, "El nombre de la columna '" + nombreColumna + "' contiene caracteres inválidos.");
+                return;
             }
+            nombresColumnas.add(nombreColumna);
+        }
 
-            String registrarTipoSQL = "INSERT INTO tipos_documentos (nombre, fecha_creacion) VALUES (?, NOW())";
-            try (PreparedStatement psRegistrar = conn.prepareStatement(registrarTipoSQL)) {
-                psRegistrar.setString(1, nombreTabla);
-                psRegistrar.executeUpdate();
-            }
-
-            conn.commit();
+        try {
+            formularioController.crearTabla(nombreTablaDB, nombresColumnas);
             JOptionPane.showMessageDialog(this, "Tabla registrada de forma exitosa.");
 
             // Limpiar campos después de la creación
