@@ -5,15 +5,20 @@ import com.biblioteca.interfaces.menus.MenuAdministrador;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import com.biblioteca.interfaces.menus.RecuperarContra;
+
 public class LoginBiblioteca extends JFrame {
     private JTextField emailField;
     private JPasswordField passwordField;
     private JButton loginButton;
+    private JLabel recuperarContra;
 
     public LoginBiblioteca() {
         // Título de la ventana
@@ -117,6 +122,34 @@ public class LoginBiblioteca extends JFrame {
         gbc.gridy = 3;
         gbc.insets = new Insets(15, 10, 10, 10);
         add(loginButton, gbc);
+        
+        // Agregamos la opcion para recuepar contraseña
+        recuperarContra = new JLabel("¿Olvidaste tu contraseña?");
+        recuperarContra.setFont(new Font("Arial", Font.PLAIN, 13));
+        recuperarContra.setForeground(new Color(30, 144, 255));
+        recuperarContra.setCursor(new Cursor((Cursor.HAND_CURSOR)));
+        recuperarContra.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                RecuperarContra.showFrame();
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                recuperarContra.setForeground(new Color(0, 102, 204));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                recuperarContra.setForeground(new Color(30, 144, 255));
+            }
+        });
+        
+        gbc.gridx = 1;
+        gbc.gridy = 4;
+        gbc.anchor = GridBagConstraints.EAST;
+        gbc.insets = new Insets(15, 10, 10, 10);
+        add(recuperarContra, gbc);
 
         // Centrar la ventana en la pantalla
         setLocationRelativeTo(null);
