@@ -3,6 +3,7 @@ package com.biblioteca.controller;
 import com.biblioteca.basedatos.ConexionBaseDatos;
 import com.biblioteca.dao.PrestamoDAO;
 import com.biblioteca.modelos.Prestamo;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
@@ -66,6 +67,25 @@ public class PrestamoController {
         // En caso de que no se encuentre el límite, se puede retornar un valor predeterminado o lanzar una excepción
         throw new SQLException("No se encontró el límite de préstamos para el rol: " + rolUsuario);
     }
+}
+public int obtenerDiasPrestamoPorRolYTipo(String rol, String tipoDocumento) throws SQLException {
+    // Implementación de la lógica para obtener los días de préstamo según rol y tipo de documento
+    String sql = "SELECT dias_maximos FROM configuraciones_prestamos WHERE rol = ? AND tipo_documento = ?";
+
+    try (Connection conn = ConexionBaseDatos.getConexion();
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        stmt.setString(1, rol);
+        stmt.setString(2, tipoDocumento);
+
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt("dias_maximos");
+            }
+        }
+    }
+
+    // Valor predeterminado si no se encuentra configuración específica
+    return 7; // Por ejemplo, 7 días por defecto
 }
 
 

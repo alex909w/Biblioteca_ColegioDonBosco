@@ -26,17 +26,17 @@ import javax.swing.table.TableCellRenderer;
 // Clase para gestionar los préstamos.
 public class GestionPrestamos extends JPanel {
 
-    private String emailUsuario; // Almacenar el correo del usuario autenticado
-    private String rolUsuario;   // Almacenar el rol del usuario autenticado
+    private String emailUsuario; 
+    private String rolUsuario;   
     private JTable tablaLibros;
     private DefaultTableModel tableModel;
     private JComboBox<String> tiposDocumentosComboBox;
     private JComboBox<Integer> diasPrestamoComboBox;
-    private JComboBox<String> usuarioComboBox; // ComboBox para seleccionar usuario (solo para administradores)
+    private JComboBox<String> usuarioComboBox; 
     private JButton buscarButton;
     private JButton registrarButton;
-    private JLabel infoLabel; // Etiqueta para mostrar el correo del usuario
-    private JLabel rolLabel;  // Etiqueta para mostrar el rol del usuario
+    private JLabel infoLabel; 
+    private JLabel rolLabel;  
 
     private PrestamoController prestamoController;
     private UsuarioDAO usuarioDAO;
@@ -122,13 +122,13 @@ public class GestionPrestamos extends JPanel {
             JPanel panelSeleccionUsuario = new JPanel();
             panelSeleccionUsuario.setLayout(new BoxLayout(panelSeleccionUsuario, BoxLayout.X_AXIS));
             panelSeleccionUsuario.setBorder(BorderFactory.createTitledBorder(
-                    BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
-                    "Asignar Préstamo a Usuario",
-                    TitledBorder.LEFT,
-                    TitledBorder.TOP,
-                    new Font("Arial", Font.BOLD, 14),
-                    new Color(70, 130, 180)
-            ));
+            BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
+            "Asignar Préstamo a Usuario",
+            TitledBorder.LEFT,
+            TitledBorder.TOP,
+            new Font("Arial", Font.BOLD, 14),
+            new Color(70, 130, 180)
+    ));
             panelSeleccionUsuario.setBackground(new Color(255, 255, 255));
 
             JLabel usuarioLabel = new JLabel("Seleccione Usuario:");
