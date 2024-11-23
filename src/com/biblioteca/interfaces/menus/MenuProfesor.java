@@ -31,6 +31,10 @@ public class MenuProfesor extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         add(crearPanelSuperior(), BorderLayout.NORTH);
+        
+        // Cargar y establecer el ícono de la ventana
+        ImageIcon icon = new ImageIcon(getClass().getResource("/com/biblioteca/img/logoinicio.png")); // Cambia la ruta si es necesario
+        setIconImage(icon.getImage()); // Establecer el ícono de la ventana
 
         panelIzquierdo = new JPanel();
         panelIzquierdo.setLayout(new BoxLayout(panelIzquierdo, BoxLayout.Y_AXIS));

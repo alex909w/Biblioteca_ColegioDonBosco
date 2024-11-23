@@ -203,125 +203,130 @@ public class EditarArticulo extends JPanel {
     }
 }
 
-    // Abre el formulario para editar un artículo seleccionado.
     private void abrirFormularioEdicion() {
-        int filaSeleccionada = tablaDatos.getSelectedRow();
-        if (filaSeleccionada == -1) {
-            JOptionPane.showMessageDialog(this, "Seleccione un registro para actualizar.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        JDialog dialogoActualizacion = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Actualizar Artículo", true);
-        dialogoActualizacion.setLayout(new BorderLayout());
-        dialogoActualizacion.setSize(600, 500);
-        dialogoActualizacion.setLocationRelativeTo(this);
-
-        // Panel de edición
-        JPanel panelEdicion = new JPanel(new GridBagLayout());
-        panelEdicion.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(70, 130, 180), 2),
-                "Editar Información",
-                TitledBorder.CENTER,
-                TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 16),
-                new Color(70, 130, 180)
-        ));
-        panelEdicion.setBackground(Color.WHITE);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        HashMap<String, JTextField> camposEdicion = new HashMap<>();
-        for (int i = 0; i < tablaDatos.getColumnCount(); i++) {
-            String columnName = tablaDatos.getColumnName(i);
-
-            JLabel etiqueta = createStyledLabel(columnName + ":");
-            etiqueta.setFont(new Font("Arial", Font.BOLD, 14));
-            etiqueta.setForeground(new Color(25, 25, 112));
-            gbc.gridx = 0;
-            gbc.gridy = i;
-            gbc.weightx = 0.3;
-            panelEdicion.add(etiqueta, gbc);
-
-            JTextField campoTexto = new JTextField(tablaDatos.getValueAt(filaSeleccionada, i).toString(), 20);
-            campoTexto.setFont(new Font("Arial", Font.PLAIN, 14));
-            campoTexto.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
-                    BorderFactory.createEmptyBorder(5, 5, 5, 5)
-            ));
-            campoTexto.setEnabled(!columnName.equalsIgnoreCase("ID"));
-            gbc.gridx = 1;
-            gbc.weightx = 0.7;
-            panelEdicion.add(campoTexto, gbc);
-            camposEdicion.put(columnName, campoTexto);
-        }
-
-        // Panel de botones
-        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        panelBotones.setBackground(Color.WHITE);
-
-        JButton guardarButton = new JButton("Guardar");
-        JButton cancelarButton = new JButton("Cancelar");
-
-        // Estilo para el botón "Guardar"
-        guardarButton.setFont(new Font("Arial", Font.BOLD, 14));
-        guardarButton.setBackground(new Color(34, 139, 34));
-        guardarButton.setForeground(Color.WHITE);
-        guardarButton.setFocusPainted(false);
-        guardarButton.setPreferredSize(new Dimension(100, 40));
-
-        // Efecto hover para "Guardar"
-        guardarButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                guardarButton.setBackground(new Color(0, 100, 0));
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                guardarButton.setBackground(new Color(34, 139, 34));
-            }
-        });
-
-        // Estilo para el botón "Cancelar"
-        cancelarButton.setFont(new Font("Arial", Font.BOLD, 14));
-        cancelarButton.setBackground(new Color(178, 34, 34));
-        cancelarButton.setForeground(Color.WHITE);
-        cancelarButton.setFocusPainted(false);
-        cancelarButton.setPreferredSize(new Dimension(100, 40));
-
-        // Efecto hover para "Cancelar"
-        cancelarButton.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(java.awt.event.MouseEvent evt) {
-                cancelarButton.setBackground(new Color(139, 0, 0));
-            }
-
-            public void mouseExited(java.awt.event.MouseEvent evt) {
-                cancelarButton.setBackground(new Color(178, 34, 34));
-            }
-        });
-
-        guardarButton.addActionListener(e -> {
-            try {
-                actualizarEnBaseDeDatos(filaSeleccionada, camposEdicion);
-                for (int i = 0; i < tablaDatos.getColumnCount(); i++) {
-                    String columnName = tablaDatos.getColumnName(i);
-                    tablaDatos.setValueAt(camposEdicion.get(columnName).getText(), filaSeleccionada, i);
-                }
-                dialogoActualizacion.dispose();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Error al actualizar: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        cancelarButton.addActionListener(e -> dialogoActualizacion.dispose());
-
-        panelBotones.add(guardarButton);
-        panelBotones.add(cancelarButton);
-
-        // Agregar paneles al diálogo
-        dialogoActualizacion.add(panelEdicion, BorderLayout.CENTER);
-        dialogoActualizacion.add(panelBotones, BorderLayout.SOUTH);
-        dialogoActualizacion.setVisible(true);
+    int filaSeleccionada = tablaDatos.getSelectedRow();
+    if (filaSeleccionada == -1) {
+        JOptionPane.showMessageDialog(this, "Seleccione un registro para actualizar.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+        return;
     }
+
+    JDialog dialogoActualizacion = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Actualizar Artículo", true);
+    dialogoActualizacion.setLayout(new BorderLayout());
+    dialogoActualizacion.setSize(1000, 600); // Tamaño ampliado
+    dialogoActualizacion.setLocationRelativeTo(this);
+
+    // Panel de edición
+    JPanel panelEdicion = new JPanel(new GridBagLayout());
+    panelEdicion.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(70, 130, 180), 2),
+            "Editar Información",
+            TitledBorder.CENTER,
+            TitledBorder.TOP,
+            new Font("Arial", Font.BOLD, 16),
+            new Color(70, 130, 180)
+    ));
+    panelEdicion.setBackground(Color.WHITE);
+
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(10, 10, 10, 10);
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+
+    HashMap<String, JTextField> camposEdicion = new HashMap<>();
+    int columnas = 2; // Número de columnas
+    int totalCampos = tablaDatos.getColumnCount();
+    int filas = (int) Math.ceil((double) totalCampos / columnas); // Calcular filas necesarias
+
+    for (int i = 0; i < totalCampos; i++) {
+        String columnName = tablaDatos.getColumnName(i);
+
+        JLabel etiqueta = createStyledLabel(columnName + ":");
+        etiqueta.setFont(new Font("Arial", Font.BOLD, 14));
+        etiqueta.setForeground(new Color(25, 25, 112));
+        gbc.gridx = i % columnas * 2; // Usar columnas dinámicas
+        gbc.gridy = i / columnas;    // Mover a la siguiente fila cuando sea necesario
+        gbc.weightx = 0.3;
+        panelEdicion.add(etiqueta, gbc);
+
+        JTextField campoTexto = new JTextField(tablaDatos.getValueAt(filaSeleccionada, i).toString(), 20);
+        campoTexto.setFont(new Font("Arial", Font.PLAIN, 14));
+        campoTexto.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
+        campoTexto.setEnabled(!columnName.equalsIgnoreCase("ID"));
+        gbc.gridx = i % columnas * 2 + 1; // Colocar el campo en la columna siguiente
+        gbc.weightx = 0.7;
+        panelEdicion.add(campoTexto, gbc);
+        camposEdicion.put(columnName, campoTexto);
+    }
+
+    // Panel de botones
+    JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+    panelBotones.setBackground(Color.WHITE);
+
+    JButton guardarButton = new JButton("Guardar");
+    JButton cancelarButton = new JButton("Cancelar");
+
+    // Estilo para el botón "Guardar"
+    guardarButton.setFont(new Font("Arial", Font.BOLD, 14));
+    guardarButton.setBackground(new Color(34, 139, 34));
+    guardarButton.setForeground(Color.WHITE);
+    guardarButton.setFocusPainted(false);
+    guardarButton.setPreferredSize(new Dimension(120, 40));
+
+    // Efecto hover para "Guardar"
+    guardarButton.addMouseListener(new java.awt.event.MouseAdapter() {
+        public void mouseEntered(java.awt.event.MouseEvent evt) {
+            guardarButton.setBackground(new Color(0, 100, 0));
+        }
+
+        public void mouseExited(java.awt.event.MouseEvent evt) {
+            guardarButton.setBackground(new Color(34, 139, 34));
+        }
+    });
+
+    // Estilo para el botón "Cancelar"
+    cancelarButton.setFont(new Font("Arial", Font.BOLD, 14));
+    cancelarButton.setBackground(new Color(178, 34, 34));
+    cancelarButton.setForeground(Color.WHITE);
+    cancelarButton.setFocusPainted(false);
+    cancelarButton.setPreferredSize(new Dimension(120, 40));
+
+    // Efecto hover para "Cancelar"
+    cancelarButton.addMouseListener(new java.awt.event.MouseAdapter() {
+        public void mouseEntered(java.awt.event.MouseEvent evt) {
+            cancelarButton.setBackground(new Color(139, 0, 0));
+        }
+
+        public void mouseExited(java.awt.event.MouseEvent evt) {
+            cancelarButton.setBackground(new Color(178, 34, 34));
+        }
+    });
+
+    guardarButton.addActionListener(e -> {
+        try {
+            actualizarEnBaseDeDatos(filaSeleccionada, camposEdicion);
+            for (int i = 0; i < tablaDatos.getColumnCount(); i++) {
+                String columnName = tablaDatos.getColumnName(i);
+                tablaDatos.setValueAt(camposEdicion.get(columnName).getText(), filaSeleccionada, i);
+            }
+            dialogoActualizacion.dispose();
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error al actualizar: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    });
+
+    cancelarButton.addActionListener(e -> dialogoActualizacion.dispose());
+
+    panelBotones.add(guardarButton);
+    panelBotones.add(cancelarButton);
+
+    // Agregar paneles al diálogo
+    dialogoActualizacion.add(new JScrollPane(panelEdicion), BorderLayout.CENTER); // Usar JScrollPane para manejar overflow
+    dialogoActualizacion.add(panelBotones, BorderLayout.SOUTH);
+    dialogoActualizacion.setVisible(true);
+}
+
 
     // Actualiza los datos en la base de datos.
     private void actualizarEnBaseDeDatos(int filaSeleccionada, HashMap<String, JTextField> camposEdicion) throws SQLException {
