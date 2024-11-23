@@ -25,9 +25,8 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import javax.swing.table.TableCellRenderer;
 
-/**
- * Clase para gestionar los préstamos.
- */
+// Clase para gestionar los préstamos.
+
 public class GestionPrestamos extends JPanel {
 
     private static final List<String> ORDEN_COLUMNAS = Arrays.asList(
@@ -440,11 +439,7 @@ public class GestionPrestamos extends JPanel {
         return -1;
     }
 
-    /**
-     * Ajusta el ancho de las columnas de una tabla según el contenido.
-     *
-     * @param table JTable cuya columnas se ajustarán.
-     */
+    // Ajusta el ancho de las columnas de una tabla según el contenido.
     private void ajustarAnchoColumnas(JTable table) {
         for (int column = 0; column < table.getColumnCount(); column++) {
             int width = 15; // Valor por defecto
@@ -459,12 +454,7 @@ public class GestionPrestamos extends JPanel {
         }
     }
 
-    /**
-     * Crea una etiqueta con estilo personalizado.
-     *
-     * @param text Texto de la etiqueta.
-     * @return JLabel con estilo.
-     */
+    //Crea una etiqueta con estilo personalizado.
     private JLabel createStyledLabel(String text) {
         JLabel label = new JLabel(text);
         label.setFont(new Font("Arial", Font.BOLD, 14));
@@ -472,13 +462,7 @@ public class GestionPrestamos extends JPanel {
         return label;
     }
 
-    /**
-     * Obtiene el nombre de la columna ID de una tabla específica.
-     *
-     * @param tabla Nombre de la tabla.
-     * @return Nombre de la columna ID.
-     * @throws SQLException Si ocurre un error en la base de datos.
-     */
+    // Obtiene el nombre de la columna ID de una tabla específica.
     private String obtenerNombreColumnaID(String tabla) throws SQLException {
         String sql = "DESCRIBE " + tabla;
         try (Connection conexion = ConexionBaseDatos.getConexion();
@@ -487,7 +471,7 @@ public class GestionPrestamos extends JPanel {
             while (rs.next()) {
                 String columna = rs.getString("Field");
                 if (columna.toLowerCase().startsWith("id_")) {
-                    return columna; // Retorna la columna que empieza con "id_"
+                    return columna; 
                 }
             }
         }
