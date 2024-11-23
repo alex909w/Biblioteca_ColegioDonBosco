@@ -180,7 +180,7 @@ public class GestionPrestamos extends JPanel {
 
         // Opcional: Deshabilitar la ordenación para columnas específicas si es necesario
         // Por ejemplo, deshabilitar la ordenación para la columna 'Sinopsis' si es muy larga
-        int sinopsisIndex = getColumnIndex(tablaLibros, "Sinopsis");
+        int sinopsisIndex = getColumnIndex("Sinopsis");
         if (sinopsisIndex != -1) {
             sorter.setSortable(sinopsisIndex, false);
         }
@@ -358,80 +358,68 @@ public class GestionPrestamos extends JPanel {
         }
     }
 
-    /**
-     * Registra un préstamo para el documento seleccionado.
-     *
-     * @param usuarioAutenticado Usuario que realiza el préstamo.
-     */
-    private void registrarPrestamo(Usuario usuarioAutenticado) {
-        if (usuarioAutenticado == null) {
-            JOptionPane.showMessageDialog(this, "No se pudo obtener la información del usuario.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        int filaSeleccionada = tablaLibros.getSelectedRow();
-        if (filaSeleccionada == -1) {
-            JOptionPane.showMessageDialog(this, "Seleccione un documento para registrar el préstamo.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
-        if (tipoDocumento == null || tipoDocumento.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento válido.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        try {
-            // Obtén el nombre dinámico del ID
-            String nombreColumnaID = obtenerNombreColumnaID(tipoDocumento);
-
-            // Convertir el índice de fila filtrado a índice de modelo
-            int modelRow = tablaLibros.convertRowIndexToModel(filaSeleccionada);
-            String idDocumento = tablaLibros.getModel().getValueAt(modelRow, getColumnIndex(tablaLibros, nombreColumnaID)).toString();
-            String cantidadDisponibleStr = tablaLibros.getModel().getValueAt(modelRow, getColumnIndex(tablaLibros, "cantidad_disponible")).toString();
-            int cantidadDisponible = Integer.parseInt(cantidadDisponibleStr);
-
-            if (cantidadDisponible <= 0) {
-                JOptionPane.showMessageDialog(this, "No hay suficientes copias disponibles para realizar el préstamo.", "Información", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
-
-            int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
-
-            // Validar límite de préstamos por rol
-            int limitePrestamos = prestamoController.obtenerLimitePrestamosPorRol(usuarioAutenticado.getRol().toLowerCase());
-            boolean puedePrestar = prestamoController.validarLimitePrestamos(usuarioAutenticado.getId(), limitePrestamos);
-            if (!puedePrestar) {
-                JOptionPane.showMessageDialog(this, "El usuario ha alcanzado el límite de préstamos permitidos para su rol.", "Información", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
-
-            // Obtener mora diaria
-            double moraDiaria = prestamoController.obtenerMoraDiariaPorRol(usuarioAutenticado.getRol().toLowerCase());
-
-            // Registrar el préstamo
-            Prestamo prestamo = new Prestamo();
-            prestamo.setIdUsuario(usuarioAutenticado.getId());
-            prestamo.setIdDocumento(idDocumento);
-            prestamo.setMoraDiaria(moraDiaria);
-            prestamo.setDiasPrestamo(diasPrestamo);
-
-            prestamoController.registrarPrestamo(prestamo);
-
-            // Actualizar cantidad disponible
-            prestamoController.actualizarDisponibilidadDocumento(tipoDocumento, idDocumento, -1);
-
-            JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
-
-            // Recargar la tabla para reflejar los cambios
-            buscarLibros();
-
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "La cantidad disponible no es válida. Verifique los datos del documento.", "Error", JOptionPane.ERROR_MESSAGE);
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
+     private void registrarPrestamo(Usuario usuarioAutenticado) {
+    int filaSeleccionada = tablaLibros.getSelectedRow();
+    if (filaSeleccionada == -1) {
+        JOptionPane.showMessageDialog(this, "Seleccione un documento para registrar el préstamo.");
+        return;
     }
+
+    String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
+    if (tipoDocumento == null || tipoDocumento.trim().isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento válido.");
+        return;
+    }
+
+    try {
+        // Obtén el nombre dinámico del ID
+        String nombreColumnaID = obtenerNombreColumnaID(tipoDocumento);
+
+        String idDocumento = tablaLibros.getValueAt(filaSeleccionada, getColumnIndex(nombreColumnaID)).toString();
+        String cantidadDisponibleStr = tablaLibros.getValueAt(filaSeleccionada, getColumnIndex("cantidad_disponible")).toString();
+        int cantidadDisponible = Integer.parseInt(cantidadDisponibleStr);
+
+        if (cantidadDisponible <= 0) {
+            JOptionPane.showMessageDialog(this, "No hay suficientes copias disponibles para realizar el préstamo.");
+            return;
+        }
+
+        int diasPrestamo = (int) diasPrestamoComboBox.getSelectedItem();
+
+        // Validar límite de préstamos por rol
+        int limitePrestamos = prestamoController.obtenerLimitePrestamosPorRol(usuarioAutenticado.getRol().toLowerCase());
+        boolean puedePrestar = prestamoController.validarLimitePrestamos(usuarioAutenticado.getId(), limitePrestamos);
+        if (!puedePrestar) {
+            JOptionPane.showMessageDialog(this, "El usuario ha alcanzado el límite de préstamos permitidos para su rol.");
+            return;
+        }
+
+        // Obtener mora diaria
+        double moraDiaria = prestamoController.obtenerMoraDiariaPorRol(usuarioAutenticado.getRol().toLowerCase());
+
+        // Registrar el préstamo
+        Prestamo prestamo = new Prestamo();
+        prestamo.setIdUsuario(usuarioAutenticado.getId());
+        prestamo.setIdDocumento(idDocumento);
+        prestamo.setMoraDiaria(moraDiaria);
+        prestamo.setDiasMora(diasPrestamo); // Usando diasMora para almacenar los días de préstamo
+
+        prestamoController.registrarPrestamo(prestamo);
+
+        // Actualizar cantidad disponible
+        prestamoController.actualizarDisponibilidadDocumento(tipoDocumento, idDocumento, -1);
+
+        JOptionPane.showMessageDialog(this, "Préstamo registrado exitosamente.");
+
+        // Recargar la tabla para reflejar los cambios
+        buscarLibros();
+
+    } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(this, "La cantidad disponible no es válida. Verifique los datos del documento.");
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage());
+    }
+}
     
     public void setDiasPrestamo(int diasPrestamo) {
     if (diasPrestamo <= 0) {
@@ -441,16 +429,11 @@ public class GestionPrestamos extends JPanel {
 }
 
 
-    /**
-     * Obtiene el índice de una columna en la tabla basada en su nombre.
-     *
-     * @param table      JTable donde buscar.
-     * @param columnName Nombre de la columna.
-     * @return Índice de la columna, o -1 si no se encuentra.
-     */
-    private int getColumnIndex(JTable table, String columnName) {
-        for (int i = 0; i < table.getColumnCount(); i++) {
-            if (table.getColumnName(i).equalsIgnoreCase(columnName)) {
+    // Obtiene el índice de una columna en la tabla basada en su nombre.
+
+     private int getColumnIndex(String columnName) {
+        for (int i = 0; i < tablaLibros.getColumnCount(); i++) {
+            if (tablaLibros.getColumnName(i).equalsIgnoreCase(columnName)) {
                 return i;
             }
         }
