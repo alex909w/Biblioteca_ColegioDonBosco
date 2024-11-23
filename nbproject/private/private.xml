@@ -3,8 +3,12 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/Alvarez/Documents/GitHub/Biblioteca_ColegioDonBosaco/src/com/biblioteca/Formularios/EditarFormulario.java</file>
-            <file>file:/C:/Users/Alvarez/Documents/GitHub/Biblioteca_ColegioDonBosaco/src/com/biblioteca/Formularios/CrearFormulario.java</file>
+            <file>file:/C:/Users/rosma/OneDrive/Escritorio/poo/Biblioteca_ColegioDonBosaco/src/com/biblioteca/Panel/Prestamos/GestionPrestamos.java</file>
+            <file>file:/C:/Users/rosma/OneDrive/Escritorio/poo/Biblioteca_ColegioDonBosaco/src/com/biblioteca/Panel/Prestamos/RegistrarDevolucion.java</file>
+            <file>file:/C:/Users/rosma/OneDrive/Escritorio/poo/Biblioteca_ColegioDonBosaco/src/com/biblioteca/interfaces/menus/MenuAdministrador.java</file>
+            <file>file:/C:/Users/rosma/OneDrive/Escritorio/poo/Biblioteca_ColegioDonBosaco/src/com/biblioteca/utilidades/DateLabelFormatter.java</file>
+            <file>file:/C:/Users/rosma/OneDrive/Escritorio/poo/Biblioteca_ColegioDonBosaco/src/com/biblioteca/Panel/Config/ConfiguracionRoles.java</file>
+            <file>file:/C:/Users/rosma/OneDrive/Escritorio/poo/Biblioteca_ColegioDonBosaco/src/com/biblioteca/interfaces/menus/LoginBiblioteca.java</file>
         </group>
     </open-files>
 </project-private>
