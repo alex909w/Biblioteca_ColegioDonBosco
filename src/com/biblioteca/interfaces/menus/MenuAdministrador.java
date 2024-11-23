@@ -94,20 +94,20 @@ public class MenuAdministrador extends JFrame {
         agregarBotonMenu("Gestión de Usuarios", new String[]{
                 "Agregar Usuario", "Editar Usuario", "Eliminar Usuario"
         });
-
-        agregarBotonMenu("Gestión de Formularios", new String[]{
-                "Crear Formulario", "Editar Formulario", "Eliminar Formulario"
+        
+        agregarBotonMenu("Consultar Ejemplares", new String[]{
+                "Registrar Préstamos", "Historial de Préstamos", "Registrar Devolución"
         });
 
         agregarBotonMenu("Gestión de Inventario", new String[]{
                 "Registrar Artículos", "Editar Artículos", "Eliminar Artículos"
         });
-
-        agregarBotonMenu("Consultar Ejemplares", new String[]{
-                "Buscar por Título, Autor o Estado","Registrar Préstamos", "Historial de Préstamos", "Registrar Devolución"
+        
+        agregarBotonMenu("Gestión de Formularios", new String[]{
+                "Crear Formulario", "Editar Formulario", "Eliminar Formulario"
         });
 
-        agregarBotonMenu("Configuraciones", new String[]{
+        agregarBotonMenu("Más", new String[]{
                 "Configuraciones"
         });
     }
@@ -175,6 +175,9 @@ public class MenuAdministrador extends JFrame {
             // Si el menú es "Gestión de Usuarios", cargar la tabla de usuarios
             if (titulo.equals("Gestión de Usuarios")) {
                 cargarTablaUsuarios();
+            }
+            if (titulo.equals("Consultar Ejemplares")) {
+                BuscarPorTituloAutorEstado();
             }
         });
 
@@ -268,11 +271,6 @@ public class MenuAdministrador extends JFrame {
                 nuevoPanel = new EliminarArticulo();
                 break;
 
-            // Consultar Ejemplares
-            case "Buscar por Título, Autor o Estado":
-                nuevoPanel = new BuscarPorTituloAutorEstado();
-                break;
-
             // Gestión de Ejemplares
             case "Registrar Préstamos":
                 nuevoPanel = new GestionPrestamos(emailUsuario);
@@ -309,6 +307,16 @@ public class MenuAdministrador extends JFrame {
         panelCentral.removeAll();
 
         VerUsuarios panelUsuarios = new VerUsuarios(); // Creamos una instancia de VerUsuarios
+        panelCentral.add(panelUsuarios, BorderLayout.CENTER);
+
+        panelCentral.revalidate();
+        panelCentral.repaint();
+    }
+    
+        private void BuscarPorTituloAutorEstado() {
+        panelCentral.removeAll();
+
+        BuscarPorTituloAutorEstado panelUsuarios = new BuscarPorTituloAutorEstado(); // Creamos una instancia de VerUsuarios
         panelCentral.add(panelUsuarios, BorderLayout.CENTER);
 
         panelCentral.revalidate();

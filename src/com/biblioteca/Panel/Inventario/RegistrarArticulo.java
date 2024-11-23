@@ -5,6 +5,9 @@ import com.biblioteca.utilidades.DateLabelFormatter;
 import org.jdatepicker.impl.JDatePanelImpl;
 import org.jdatepicker.impl.JDatePickerImpl;
 import org.jdatepicker.impl.UtilDateModel;
+import com.biblioteca.Formularios.CrearFormulario;
+import com.biblioteca.Formularios.EditarFormulario;
+import com.biblioteca.Formularios.EliminarFormulario;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -33,10 +36,10 @@ public class RegistrarArticulo extends JPanel {
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(new Color(70, 130, 180), 2),
-                "Registrar Información en Tablas",
+                "Registrar Nuevo Artículo",
                 TitledBorder.CENTER,
                 TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 18),
+                new Font("Segoe UI", Font.BOLD, 18),
                 new Color(70, 130, 180)
         ));
 
@@ -52,7 +55,7 @@ public class RegistrarArticulo extends JPanel {
         gbc.gridy = 0;
         gbc.gridwidth = 1;
         gbc.weightx = 0.3;
-        superiorPanel.add(createStyledLabel("Seleccionar Tabla:"), gbc);
+        superiorPanel.add(createStyledLabel("Formulario:"), gbc);
 
         // ComboBox para tablas
         gbc.gridx = 1;
@@ -94,7 +97,7 @@ public class RegistrarArticulo extends JPanel {
                 "Formulario Dinámico",
                 TitledBorder.LEFT,
                 TitledBorder.TOP,
-                new Font("Arial", Font.BOLD, 14),
+                new Font("Segoe UI", Font.BOLD, 14),
                 Color.DARK_GRAY
         ));
         add(scrollPanel, BorderLayout.CENTER);
@@ -117,8 +120,8 @@ public class RegistrarArticulo extends JPanel {
      
     private void cargarFormularios() {
         formulariosComboBox.removeAllItems();
-        // Añadir el elemento predeterminado "Opciones"
-        addDefaultItem(formulariosComboBox, "Opciones");
+        // Añadir el elemento predeterminado "Seleccionar"
+        addDefaultItem(formulariosComboBox, "Seleccionar");
 
         try {
             List<String> formularios = inventarioController.obtenerFormularios();
@@ -137,7 +140,7 @@ public class RegistrarArticulo extends JPanel {
      
     private void cargarFormulario() {
         tablaSeleccionada = (String) formulariosComboBox.getSelectedItem();
-        if (tablaSeleccionada == null || tablaSeleccionada.equals("Opciones")) {
+        if (tablaSeleccionada == null || tablaSeleccionada.equals("Seleccionar")) {
             JOptionPane.showMessageDialog(this, "Por favor, seleccione una opción válida.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -170,7 +173,7 @@ public class RegistrarArticulo extends JPanel {
 
                 if (nombreColumna.equalsIgnoreCase("estado")) {
                     JComboBox<String> estadoComboBox = new JComboBox<>(new String[]{"Bueno", "Dañado", "En Reparación"});
-                    estadoComboBox.setFont(new Font("Arial", Font.PLAIN, 14));
+                    estadoComboBox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
                     estadoComboBox.setBackground(Color.WHITE);
                     formularioPanel.add(estadoComboBox, gbc);
                     camposDinamicos.add(estadoComboBox);
@@ -355,7 +358,7 @@ public class RegistrarArticulo extends JPanel {
 
     private JButton createStyledButton(String text, Color defaultColor, Color hoverColor) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setFont(new Font("Segoe UI", Font.BOLD, 14));
         button.setBackground(defaultColor);
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
@@ -379,7 +382,7 @@ public class RegistrarArticulo extends JPanel {
 
     private JLabel createStyledLabel(String text) {
         JLabel label = new JLabel(text);
-        label.setFont(new Font("Arial", Font.BOLD, 14));
+        label.setFont(new Font("Segoe UI", Font.BOLD, 14));
         label.setForeground(new Color(70, 130, 180));
         return label;
     }
@@ -388,7 +391,7 @@ public class RegistrarArticulo extends JPanel {
 
     private JComboBox<String> createStyledComboBox() {
         JComboBox<String> comboBox = new JComboBox<>();
-        comboBox.setFont(new Font("Arial", Font.PLAIN, 14));
+        comboBox.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         comboBox.setBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 1));
         return comboBox;
     }
@@ -397,7 +400,7 @@ public class RegistrarArticulo extends JPanel {
     
     private JTextField createStyledTextField() {
         JTextField textField = new JTextField();
-        textField.setFont(new Font("Arial", Font.PLAIN, 14));
+        textField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         textField.setBorder(BorderFactory.createLineBorder(new Color(70, 130, 180), 1));
         textField.setBackground(Color.WHITE);
         return textField;
