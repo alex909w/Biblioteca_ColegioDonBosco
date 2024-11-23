@@ -29,13 +29,6 @@ import javax.swing.table.TableCellRenderer;
 
 public class GestionPrestamos extends JPanel {
 
-    private static final List<String> ORDEN_COLUMNAS = Arrays.asList(
-        "id_libros", "Título", "Autor(es)", "Categoría", "Fecha_de_Publicación",
-        "Editorial", "ISBN", "Edición", "Idioma", "Sinopsis",
-        "ubicacion_fisica", "cantidad_disponible", "cantidad_total",
-        "estado", "palabras_clave"
-    );
-
     private String emailUsuario; // Almacenar el correo del usuario autenticado
     private JTable tablaLibros;
     private DefaultTableModel tableModel;
@@ -300,62 +293,48 @@ public class GestionPrestamos extends JPanel {
      * Busca y carga los documentos disponibles del tipo seleccionado.
      */
     private void buscarLibros() {
-        String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
+    String tipoDocumento = (String) tiposDocumentosComboBox.getSelectedItem();
 
-        if (tipoDocumento == null) {
-            JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
+    if (tipoDocumento == null) {
+        JOptionPane.showMessageDialog(this, "Seleccione un tipo de documento.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
 
-        try {
-            // Obtén el nombre dinámico del ID
-            String nombreColumnaID = obtenerNombreColumnaID(tipoDocumento);
+    try {
+        // Obtener el orden de las columnas desde la base de datos
+        List<String> columnasOrdenadas = obtenerOrdenColumnasDesdeBD(tipoDocumento);
 
-            List<Map<String, Object>> documentos = documentoDAO.obtenerTodosLosDocumentos(tipoDocumento);
+        // Obtener los datos de la tabla seleccionada
+        List<Map<String, Object>> documentos = documentoDAO.obtenerTodosLosDocumentos(tipoDocumento);
 
-            // Obtener el modelo de la tabla y limpiarlo antes de insertar nuevos datos
-            DefaultTableModel modeloTabla = (DefaultTableModel) tablaLibros.getModel();
-            modeloTabla.setRowCount(0); // Limpiar filas
-            modeloTabla.setColumnCount(0); // Limpiar columnas
+        // Obtener el modelo de la tabla y limpiarlo antes de insertar nuevos datos
+        DefaultTableModel modeloTabla = (DefaultTableModel) tablaLibros.getModel();
+        modeloTabla.setRowCount(0); // Limpiar filas
+        modeloTabla.setColumnCount(0); // Limpiar columnas
 
-            if (!documentos.isEmpty()) {
-                // Crear un mapa de columnas disponibles en los datos
-                Set<String> columnasDisponibles = documentos.get(0).keySet();
-
-                // Añadir las columnas al modelo en el orden definido
-                for (String columna : ORDEN_COLUMNAS) {
-                    if (columnasDisponibles.contains(columna)) {
-                        modeloTabla.addColumn(columna);
-                    }
-                }
-
-                // Añadir las columnas que no están en el orden predeterminado pero existen en los datos
-                for (String columna : columnasDisponibles) {
-                    if (!ORDEN_COLUMNAS.contains(columna)) {
-                        modeloTabla.addColumn(columna);
-                    }
-                }
-
-                // Añadir las filas en el orden de las columnas
-                for (Map<String, Object> doc : documentos) {
-                    List<Object> rowData = new ArrayList<>();
-                    for (int i = 0; i < modeloTabla.getColumnCount(); i++) {
-                        String columna = modeloTabla.getColumnName(i);
-                        rowData.add(doc.get(columna));
-                    }
-                    modeloTabla.addRow(rowData.toArray());
-                }
-
-                // Ajustar el ancho de las columnas según el contenido
-                ajustarAnchoColumnas(tablaLibros);
-            } else {
-                JOptionPane.showMessageDialog(this, "No hay documentos disponibles para el tipo seleccionado.", "Información", JOptionPane.INFORMATION_MESSAGE);
+        if (!documentos.isEmpty()) {
+            // Añadir las columnas al modelo en el orden obtenido de la base de datos
+            for (String columna : columnasOrdenadas) {
+                modeloTabla.addColumn(columna);
             }
 
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al cargar datos de la tabla seleccionada: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            // Añadir las filas respetando el orden de las columnas
+            for (Map<String, Object> doc : documentos) {
+                Object[] rowData = columnasOrdenadas.stream().map(doc::get).toArray();
+                modeloTabla.addRow(rowData);
+            }
+
+            // Ajustar el ancho de las columnas según el contenido
+            ajustarAnchoColumnas(tablaLibros);
+        } else {
+            JOptionPane.showMessageDialog(this, "No hay documentos disponibles para el tipo seleccionado.", "Información", JOptionPane.INFORMATION_MESSAGE);
         }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al cargar datos de la tabla seleccionada: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
     }
+}
+
 
      private void registrarPrestamo(Usuario usuarioAutenticado) {
     int filaSeleccionada = tablaLibros.getSelectedRow();
@@ -483,6 +462,24 @@ public class GestionPrestamos extends JPanel {
     }
     throw new SQLException("No se encontró ninguna columna que comience con 'id_' en la tabla: " + tabla);
 }
+
+    private List<String> obtenerOrdenColumnasDesdeBD(String tabla) throws SQLException {
+    List<String> columnasOrdenadas = new ArrayList<>();
+    String sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? ORDER BY ORDINAL_POSITION";
+
+    try (Connection conexion = ConexionBaseDatos.getConexion();
+         PreparedStatement stmt = conexion.prepareStatement(sql)) {
+        stmt.setString(1, tabla);
+        try (ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                columnasOrdenadas.add(rs.getString("COLUMN_NAME"));
+            }
+        }
+    }
+
+    return columnasOrdenadas;
+}
+
 
 
 }
