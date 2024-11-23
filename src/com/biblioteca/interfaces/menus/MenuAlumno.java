@@ -2,11 +2,10 @@ package com.biblioteca.interfaces.menus;
 
 
 
+import com.biblioteca.Panel.Dashboard.DashboardPanel;
 import com.biblioteca.Panel.Prestamos.BuscarPorTituloAutorEstado;
-import com.biblioteca.Panel.Prestamos.ConsultarPrestamos;
-import com.biblioteca.Panel.Prestamos.GestionPrestamos;
+import com.biblioteca.Panel.Prestamos.ConsultarMisPrestamos;
 import com.biblioteca.Panel.Prestamos.HistorialPrestamos;
-import com.biblioteca.Panel.Prestamos.RegistrarDevolucion;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
@@ -26,8 +25,8 @@ public class MenuAlumno extends JFrame {
     private final Font FUENTE_TITULO = new Font("Segoe UI", Font.BOLD, 24);
 
     public MenuAlumno(String email) {
-        this.emailUsuario = email;
-        setTitle("Menú Principal - Rol: Alumno");
+          this.emailUsuario = email;
+        setTitle("Menú Principal - Rol: Profesor");
         setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
@@ -39,23 +38,24 @@ public class MenuAlumno extends JFrame {
 
         panelIzquierdo = new JPanel();
         panelIzquierdo.setLayout(new BoxLayout(panelIzquierdo, BoxLayout.Y_AXIS));
-        panelIzquierdo.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         panelIzquierdo.setBackground(FONDO_LATERAL);
+        panelIzquierdo.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         JScrollPane scrollPanelIzquierdo = new JScrollPane(panelIzquierdo);
         scrollPanelIzquierdo.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         add(scrollPanelIzquierdo, BorderLayout.WEST);
+        
+        DashboardPanel dashboardPanel = new DashboardPanel(emailUsuario);
 
         panelCentral = new JPanel();
         panelCentral.setLayout(new BorderLayout());
         panelCentral.setBorder(BorderFactory.createTitledBorder("Contenido"));
+        panelCentral.add(dashboardPanel, BorderLayout.CENTER);
         add(panelCentral, BorderLayout.CENTER);
 
         submenusVisibles = new HashMap<>();
-
         configurarMenu();
         agregarBotonSalir();
-
-        setLocationRelativeTo(null); // Centrar la ventana
+        setLocationRelativeTo(null);
         setVisible(true);
     }
 
@@ -74,8 +74,11 @@ public class MenuAlumno extends JFrame {
     }
 
     private void configurarMenu() {
+        agregarBotonMenu("Consultar Ejemplares", new String[]{
+            "Buscar por Título, Autor o Estado"
+        });
         agregarBotonMenu("Gestión de Préstamos", new String[]{
-            "Buscar por Título, Autor o Estado","Solicitar Préstamo", "Ver Historial de Préstamos","Ver Estado de Devoluciones"
+            "Consultar mis Préstamos", "Ver Historial de Préstamos"
         });
     }
 
@@ -114,7 +117,7 @@ public class MenuAlumno extends JFrame {
             botonSubmenu.setBorder(BorderFactory.createEmptyBorder(5, 20, 5, 10));
             botonSubmenu.setPreferredSize(new Dimension(250, 40));
             botonSubmenu.setMaximumSize(new Dimension(250, 40));
-            botonSubmenu.addActionListener(e -> ejecutarFuncionAlumno(submenu));
+            botonSubmenu.addActionListener(e -> ejecutarFuncionProfesor(submenu));
             subMenuPanel.add(botonSubmenu);
 
             botonSubmenu.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -162,8 +165,6 @@ public class MenuAlumno extends JFrame {
             BorderFactory.createLineBorder(Color.GRAY, 1),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
-        botonSalir.setFocusPainted(false);
-
         botonSalir.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -178,34 +179,27 @@ public class MenuAlumno extends JFrame {
 
         botonSalir.addActionListener(e -> {
             dispose();
-            new LoginBiblioteca(); // Asegúrate de que LoginBiblioteca tenga un constructor sin parámetros
+            new LoginBiblioteca();
         });
 
         panelIzquierdo.add(Box.createVerticalGlue());
         panelIzquierdo.add(botonSalir);
     }
 
-    private void ejecutarFuncionAlumno(String submenu) {
+    private void ejecutarFuncionProfesor(String submenu) {
         panelCentral.removeAll();
-        String correoUsuario = obtenerCorreoUsuarioAutenticado();
 
         JPanel nuevoPanel = null;
 
         switch (submenu) {
             case "Buscar por Título, Autor o Estado":
-                nuevoPanel = new BuscarPorTituloAutorEstado(); // Pasar el email
+                nuevoPanel = new BuscarPorTituloAutorEstado(); // Pasar el email si es necesario
                 break;
-            case "Solicitar Préstamo":
-                nuevoPanel = new GestionPrestamos(correoUsuario); // Implementa esta clase y pasa el email
+            case "Consultar mis Préstamos":
+                nuevoPanel = new ConsultarMisPrestamos(emailUsuario); // Pasar el email
                 break;
             case "Ver Historial de Préstamos":
-                nuevoPanel = new HistorialPrestamos(correoUsuario); // Pasar el email
-                break;
-            case "Ver Estado de Devoluciones":
-                nuevoPanel = new RegistrarDevolucion(correoUsuario); // Implementa esta clase y pasa el email
-                break;
-            case "Consultas":
-                nuevoPanel = new ConsultarPrestamos(correoUsuario); // Implementa esta clase y pasa el email
+                nuevoPanel = new HistorialPrestamos(emailUsuario); // Pasar el email
                 break;
             default:
                 nuevoPanel = new JPanel();
@@ -219,11 +213,6 @@ public class MenuAlumno extends JFrame {
         panelCentral.revalidate();
         panelCentral.repaint();
     }
-
-    private String obtenerCorreoUsuarioAutenticado() {
-        return this.emailUsuario;
-    }
-
      public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new MenuAlumno("alumno@colegio.com")); // Correo de prueba
     }

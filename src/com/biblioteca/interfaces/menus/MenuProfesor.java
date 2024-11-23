@@ -2,10 +2,10 @@ package com.biblioteca.interfaces.menus;
 
 
 
+import com.biblioteca.Panel.Dashboard.DashboardPanel;
 import com.biblioteca.Panel.Prestamos.BuscarPorTituloAutorEstado;
-import com.biblioteca.Panel.Prestamos.GestionPrestamos;
+import com.biblioteca.Panel.Prestamos.ConsultarMisPrestamos;
 import com.biblioteca.Panel.Prestamos.HistorialPrestamos;
-import com.biblioteca.Panel.Prestamos.RegistrarDevolucion;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
@@ -43,10 +43,13 @@ public class MenuProfesor extends JFrame {
         JScrollPane scrollPanelIzquierdo = new JScrollPane(panelIzquierdo);
         scrollPanelIzquierdo.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         add(scrollPanelIzquierdo, BorderLayout.WEST);
+        
+        DashboardPanel dashboardPanel = new DashboardPanel(emailUsuario);
 
         panelCentral = new JPanel();
         panelCentral.setLayout(new BorderLayout());
         panelCentral.setBorder(BorderFactory.createTitledBorder("Contenido"));
+        panelCentral.add(dashboardPanel, BorderLayout.CENTER);
         add(panelCentral, BorderLayout.CENTER);
 
         submenusVisibles = new HashMap<>();
@@ -75,10 +78,7 @@ public class MenuProfesor extends JFrame {
             "Buscar por Título, Autor o Estado"
         });
         agregarBotonMenu("Gestión de Préstamos", new String[]{
-            "Registrar Préstamos", "Ver Historial de Préstamos"
-        });
-        agregarBotonMenu("Gestión de Devoluciones", new String[]{
-            "Registrar Devolución"
+            "Consultar mis Préstamos", "Ver Historial de Préstamos"
         });
     }
 
@@ -195,14 +195,11 @@ public class MenuProfesor extends JFrame {
             case "Buscar por Título, Autor o Estado":
                 nuevoPanel = new BuscarPorTituloAutorEstado(); // Pasar el email si es necesario
                 break;
-            case "Registrar Préstamos":
-                nuevoPanel = new GestionPrestamos(emailUsuario); // Pasar el email
+            case "Consultar mis Préstamos":
+                nuevoPanel = new ConsultarMisPrestamos(emailUsuario); // Pasar el email
                 break;
             case "Ver Historial de Préstamos":
                 nuevoPanel = new HistorialPrestamos(emailUsuario); // Pasar el email
-                break;
-            case "Registrar Devolución":
-                nuevoPanel = new RegistrarDevolucion(emailUsuario); // Pasar el email
                 break;
             default:
                 nuevoPanel = new JPanel();
@@ -217,9 +214,6 @@ public class MenuProfesor extends JFrame {
         panelCentral.repaint();
     }
 
-    private String obtenerCorreoUsuarioAutenticado() {
-        return this.emailUsuario;
-    }
  public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new MenuProfesor("profesor@colegio.com")); // Correo de prueba
     }
