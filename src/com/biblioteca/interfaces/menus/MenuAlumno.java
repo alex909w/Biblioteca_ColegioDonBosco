@@ -26,7 +26,7 @@ public class MenuAlumno extends JFrame {
 
     public MenuAlumno(String email) {
           this.emailUsuario = email;
-        setTitle("Menú Principal - Rol: Profesor");
+        setTitle("Menú Principal: Alumno");
         setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());

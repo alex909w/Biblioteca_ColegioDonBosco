@@ -9,6 +9,7 @@ import com.biblioteca.Formularios.EliminarFormulario;
 import com.biblioteca.Panel.Config.ConfiguracionRoles;
 import com.biblioteca.Panel.Prestamos.BuscarPorTituloAutorEstado;
 import com.biblioteca.Panel.Prestamos.GestionPrestamos;
+import com.biblioteca.Panel.Prestamos.HistorialAdministrador;
 import com.biblioteca.Panel.Prestamos.HistorialPrestamos;
 import com.biblioteca.Panel.Prestamos.RegistrarDevolucion;
 import com.biblioteca.Panel.Usuarios.AgregarUsuario;
@@ -25,6 +26,7 @@ import org.jdatepicker.impl.JDatePickerImpl;
 
 public class MenuAdministrador extends JFrame {
     private String emailUsuario;
+    private boolean esAdministrador;
     private JPanel panelCentral;
     private JPanel panelIzquierdo;
     private Map<String, JPanel> submenusVisibles;
@@ -277,7 +279,7 @@ public class MenuAdministrador extends JFrame {
                 break;
             case "Historial de Préstamos":
                 String correoUsuario = obtenerCorreoUsuarioAutenticado();
-                nuevoPanel = new HistorialPrestamos(correoUsuario);
+                nuevoPanel = new HistorialAdministrador();
                 break;
 
             // Gestión de Devoluciones

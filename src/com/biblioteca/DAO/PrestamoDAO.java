@@ -107,19 +107,20 @@ public class PrestamoDAO {
 
     // Obtiene el límite de préstamos configurado para un rol específico.
 
-    public int obtenerLimitePrestamosPorRol(String rolUsuario) throws SQLException {
-        String sql = "SELECT valor FROM configuraciones WHERE clave = ?";
-        try (Connection conexion = ConexionBaseDatos.getConexion();
-             PreparedStatement stmt = conexion.prepareStatement(sql)) {
-            stmt.setString(1, "limite_prestamos_" + rolUsuario);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("valor");
-                }
-            }
-        }
-        return 3; // Valor por defecto
+    private int obtenerLimitePrestamosPorRol(String rolUsuario) throws SQLException {
+    String sql = "SELECT valor FROM configuraciones WHERE clave = ?";
+    PreparedStatement stmt = ConexionBaseDatos.getConexion().prepareStatement(sql);
+
+    String claveLimitePrestamos = "limite_prestamos_" + rolUsuario.toLowerCase();
+    stmt.setString(1, claveLimitePrestamos);
+    ResultSet rs = stmt.executeQuery();
+
+    if (rs.next()) {
+        return rs.getInt("valor");
     }
+    return 0; // Valor por defecto si no se encuentra el límite
+}
+
 
     //Registra la devolución de un préstamo.
 

@@ -1,7 +1,10 @@
 package com.biblioteca.controller;
 
+import com.biblioteca.basedatos.ConexionBaseDatos;
 import com.biblioteca.dao.PrestamoDAO;
 import com.biblioteca.modelos.Prestamo;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -46,8 +49,25 @@ public class PrestamoController {
     // Obtiene el límite de préstamos configurado para un rol específico.
  
     public int obtenerLimitePrestamosPorRol(String rolUsuario) throws SQLException {
-        return prestamoDAO.obtenerLimitePrestamosPorRol(rolUsuario);
+    // Consulta SQL para obtener el límite de préstamos desde la tabla configuraciones
+    String sql = "SELECT valor FROM configuraciones WHERE clave = ?";
+    PreparedStatement stmt = ConexionBaseDatos.getConexion().prepareStatement(sql);
+
+    // Ajustar la clave dependiendo del rol
+    String claveLimite = "limite_prestamos_" + rolUsuario.toLowerCase();
+    stmt.setString(1, claveLimite);
+
+    ResultSet rs = stmt.executeQuery();
+
+    // Verificar si se obtiene un valor para el límite de préstamos
+    if (rs.next()) {
+        return rs.getInt("valor");
+    } else {
+        // En caso de que no se encuentre el límite, se puede retornar un valor predeterminado o lanzar una excepción
+        throw new SQLException("No se encontró el límite de préstamos para el rol: " + rolUsuario);
     }
+}
+
 
     //Registra la devolución de un préstamo.
     
