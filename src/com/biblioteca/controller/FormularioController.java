@@ -1,7 +1,8 @@
 package com.biblioteca.controller;
 
 import com.biblioteca.dao.FormularioDAO;
-
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -44,6 +45,14 @@ public class FormularioController {
     }
 
     //Agrega una nueva columna a una tabla existente.
+    
+    public void eliminarColumna(String nombreTabla, String nombreColumna) throws SQLException {
+    String sql = "ALTER TABLE " + nombreTabla + " DROP COLUMN " + nombreColumna;
+    try (Connection conn = formularioDAO.getConexion();
+         PreparedStatement ps = conn.prepareStatement(sql)) {
+        ps.executeUpdate();
+    }
+    }
    
     public void agregarNuevaColumna(String nombreTabla, String nuevoNombre, String tipoDato) throws SQLException {
         formularioDAO.agregarNuevaColumna(nombreTabla, nuevoNombre, tipoDato);

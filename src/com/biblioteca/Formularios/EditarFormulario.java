@@ -80,6 +80,7 @@ public class EditarFormulario extends JPanel {
         gbc.gridwidth = 1;
         gbc.weightx = 0.5;
         configuracionPanel.add(tablasComboBox = createStyledComboBox(), gbc);
+        
 
         gbc.gridx = 2;
         gbc.gridy = 0;
@@ -123,52 +124,40 @@ public class EditarFormulario extends JPanel {
         cancelarButton = createStyledButton("Cancelar", botonCancelar, botonCancelarHover);
         cancelarButton.addActionListener(e -> cancelarAccion());
         buttonPanel.add(cancelarButton);
+        
 
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
     // Método que carga las columnas de la tabla seleccionada y permite editarlas
     private void cargarColumnas() {
-        
-         // Limpia el panel de columnas y las listas de campos dinámicos
         columnasPanel.removeAll();
         camposDinamicos.clear();
         nuevasColumnas.clear();
         usarExistente = false;
-        
-   // Obtiene el nombre de la tabla seleccionada del ComboBox
-   
+
         String nombreTabla = (String) tablasComboBox.getSelectedItem();
-        // Verifica si se ha seleccionado una tabla válida
         if (nombreTabla == null || nombreTabla.equals("Opciones")) {
             JOptionPane.showMessageDialog(this, "Por favor, seleccione una tabla.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
-// Verifica si el nombre de la tabla contiene caracteres inválidos
 
         if (!nombreTabla.matches("[a-zA-Z0-9_]+")) {
             JOptionPane.showMessageDialog(this, "El nombre de la tabla contiene caracteres inválidos.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-         // Crea el identificador de la columna "id" de la tabla, basado en el nombre de la tabla
-        String idColumna = "id_" + nombreTabla.toLowerCase();
-
         try {
-             // Obtiene las columnas de la tabla seleccionada desde el controlador
             List<String> columnas = formularioController.obtenerColumnas(nombreTabla);
-            
-             // Itera sobre las columnas obtenidas para crear un panel para cada una
+
             for (String campo : columnas) {
-                String tipo = obtenerTipoColumna(nombreTabla, campo);    // Obtiene el tipo de cada columna
-                JPanel columnaPanel = new JPanel(new GridBagLayout());  // Crea un panel para cada columna con un diseño de cuadrícula
+                JPanel columnaPanel = new JPanel(new GridBagLayout());
                 columnaPanel.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createLineBorder(new Color(70, 130, 180), 1),
                         BorderFactory.createEmptyBorder(10, 10, 10, 10)
                 ));
                 columnaPanel.setBackground(Color.WHITE);
 
-                 // Configura las restricciones de la cuadrícula para el panel de la columna
                 GridBagConstraints gbcCol = new GridBagConstraints();
                 gbcCol.insets = new Insets(5, 5, 5, 5);
                 gbcCol.fill = GridBagConstraints.HORIZONTAL;
@@ -176,30 +165,56 @@ public class EditarFormulario extends JPanel {
                 // Etiqueta del campo
                 gbcCol.gridx = 0;
                 gbcCol.gridy = 0;
-                gbcCol.weightx = 0.4;
+                gbcCol.weightx = 0.2;
                 gbcCol.anchor = GridBagConstraints.WEST;
-                String etiquetaTexto = formatString(campo);
-                columnaPanel.add(createStyledLabel("Columna: " + etiquetaTexto), gbcCol);
+                columnaPanel.add(createStyledLabel("Columna: " + campo), gbcCol);
 
                 // Campo para nuevo nombre
                 gbcCol.gridx = 1;
                 gbcCol.gridy = 0;
-                gbcCol.weightx = 0.6;
+                gbcCol.weightx = 0.2;
                 JTextField nuevoNombreField = createStyledTextField();
                 nuevoNombreField.setToolTipText(campo); // Guardar el nombre original
                 columnaPanel.add(nuevoNombreField, gbcCol);
-
                 camposDinamicos.add(nuevoNombreField);
+
+                // Botón para eliminar columna
+                gbcCol.gridx = 2;
+                gbcCol.gridy = 0;
+                gbcCol.weightx = 0.01;
+                JButton eliminarColumnaButton = createStyledButton("Eliminar", botonCancelar, botonCancelarHover);
+                eliminarColumnaButton.addActionListener(e -> eliminarColumna(nombreTabla, campo, columnaPanel));
+                columnaPanel.add(eliminarColumnaButton, gbcCol);
+
                 columnasPanel.add(columnaPanel);
             }
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error al cargar columnas: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();    // Maneja cualquier error de base de datos durante la carga de las columnas
+            ex.printStackTrace();
         }
 
-        // Refresca la interfaz gráfica para mostrar las nuevas columnas cargadas
         columnasPanel.revalidate();
         columnasPanel.repaint();
+    }
+
+    // Método para eliminar una columna
+    private void eliminarColumna(String nombreTabla, String nombreColumna, JPanel columnaPanel) {
+        int confirmacion = JOptionPane.showConfirmDialog(this,
+                "¿Está seguro de que desea eliminar la columna '" + nombreColumna + "'?",
+                "Confirmar Eliminación", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            try {
+                formularioController.eliminarColumna(nombreTabla, nombreColumna);
+                columnasPanel.remove(columnaPanel); // Eliminar el panel de la interfaz gráfica
+                columnasPanel.revalidate();
+                columnasPanel.repaint();
+                JOptionPane.showMessageDialog(this, "Columna eliminada correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Error al eliminar la columna: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        }
     }
 
     private String obtenerTipoColumna(String nombreTabla, String columna) throws SQLException {
