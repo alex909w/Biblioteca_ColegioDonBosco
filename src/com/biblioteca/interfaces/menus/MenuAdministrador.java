@@ -104,19 +104,11 @@ public class MenuAdministrador extends JFrame {
         });
 
         agregarBotonMenu("Consultar Ejemplares", new String[]{
-                "Buscar por Título, Autor o Estado"
-        });
-
-        agregarBotonMenu("Gestión de Ejemplares", new String[]{
-                "Registrar Préstamos", "Historial de Préstamos"
-        });
-
-        agregarBotonMenu("Gestión de Devoluciones", new String[]{
-                "Registrar Devolución"
+                "Buscar por Título, Autor o Estado","Registrar Préstamos", "Historial de Préstamos", "Registrar Devolución"
         });
 
         agregarBotonMenu("Configuraciones", new String[]{
-                "Ver Mora Pendiente"
+                "Configuraciones"
         });
     }
 
@@ -296,7 +288,7 @@ public class MenuAdministrador extends JFrame {
                 break;
 
             // Configuraciones
-            case "Ver Mora Pendiente":
+            case "Configuraciones":
                 nuevoPanel = new ConfiguracionRoles();
                 break;
 
