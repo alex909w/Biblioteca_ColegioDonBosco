@@ -33,21 +33,22 @@ public class DocumentoDAO {
     }
     
     //Obtiene los nombres de las tablas desde la tabla 'tipos_documentos'.
-   
      public List<String> obtenerNombresTablas() throws SQLException {
-        List<String> tablas = new ArrayList<>();
-        String sql = "SELECT nombre FROM tipos_documentos";
+    List<String> tablas = new ArrayList<>();
+    // Ordena las tablas por el ID para mantener el orden definido en la base de datos
+    String sql = "SELECT nombre FROM tipos_documentos ORDER BY id ASC";
 
-        try (Connection conexion = ConexionBaseDatos.getConexion();
-             PreparedStatement stmt = conexion.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                tablas.add(rs.getString("nombre"));
-            }
+    try (Connection conexion = ConexionBaseDatos.getConexion();
+         PreparedStatement stmt = conexion.prepareStatement(sql);
+         ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+            tablas.add(rs.getString("nombre"));
         }
-
-        return tablas;
     }
+
+    return tablas;
+}
+
 
     // Obtiene las columnas de una tabla específica.
      
@@ -208,7 +209,19 @@ public void registrarDevolucionDinamica(String tabla, String idDocumento, String
     }
 }
 
+public List<String> obtenerColumnasOrdenadas(String tabla) throws SQLException {
+    List<String> columnas = new ArrayList<>();
+    String sql = "DESCRIBE `" + tabla + "`"; // Consulta para obtener la estructura de la tabla
 
+    try (Connection conexion = ConexionBaseDatos.getConexion();
+         PreparedStatement stmt = conexion.prepareStatement(sql);
+         ResultSet rs = stmt.executeQuery()) {
+        while (rs.next()) {
+            columnas.add(rs.getString("Field")); // Obtén el nombre de cada columna en orden
+        }
+    }
 
+    return columnas;
+}
 
 }

@@ -373,7 +373,12 @@ public class GestionPrestamos extends JPanel {
     try {
         // Obtén el nombre dinámico del ID
         String nombreColumnaID = obtenerNombreColumnaID(tipoDocumento);
+        if (nombreColumnaID == null || nombreColumnaID.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No se encontró un ID válido para el tipo de documento seleccionado.");
+            return;
+        }
 
+        // Obtén el valor del ID del documento
         String idDocumento = tablaLibros.getValueAt(filaSeleccionada, getColumnIndex(nombreColumnaID)).toString();
         String cantidadDisponibleStr = tablaLibros.getValueAt(filaSeleccionada, getColumnIndex("cantidad_disponible")).toString();
         int cantidadDisponible = Integer.parseInt(cantidadDisponibleStr);
@@ -419,6 +424,8 @@ public class GestionPrestamos extends JPanel {
         JOptionPane.showMessageDialog(this, "Error al registrar préstamo: " + e.getMessage());
     }
 }
+
+
     
     public void setDiasPrestamo(int diasPrestamo) {
     if (diasPrestamo <= 0) {
@@ -464,17 +471,18 @@ public class GestionPrestamos extends JPanel {
 
     // Obtiene el nombre de la columna ID de una tabla específica.
     private String obtenerNombreColumnaID(String tabla) throws SQLException {
-        String sql = "DESCRIBE " + tabla;
-        try (Connection conexion = ConexionBaseDatos.getConexion();
-             PreparedStatement stmt = conexion.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                String columna = rs.getString("Field");
-                if (columna.toLowerCase().startsWith("id_")) {
-                    return columna; 
-                }
+    String sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME LIKE 'id_%'";
+    try (Connection conexion = ConexionBaseDatos.getConexion();
+         PreparedStatement stmt = conexion.prepareStatement(sql)) {
+        stmt.setString(1, tabla);
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getString("COLUMN_NAME");
             }
         }
-        throw new SQLException("No se encontró ninguna columna que comience con 'id_' en la tabla: " + tabla);
     }
+    throw new SQLException("No se encontró ninguna columna que comience con 'id_' en la tabla: " + tabla);
+}
+
+
 }

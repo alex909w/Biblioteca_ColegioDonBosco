@@ -20,19 +20,56 @@ public class DocumentoController {
         public DocumentoController() {
         this.documentoDAO = new DocumentoDAO();
     }
+        
    public List<Map<String, Object>> buscarEnVistaUnificada(String criterio) throws SQLException {
         return documentoDAO.buscarEnTodasLasTablas(criterio);
     }
-   public List<Map<String, Object>> buscarPorCriterioEnTodasLasTablas(String criterio) throws SQLException {
+   
+  public List<Map<String, Object>> buscarPorCriterioEnTodasLasTablas(String criterio) throws SQLException {
         List<Map<String, Object>> resultadosTotales = new ArrayList<>();
         List<String> tablas = documentoDAO.obtenerNombresTablas();
 
         for (String tabla : tablas) {
             List<Map<String, Object>> resultados = documentoDAO.buscarEnTabla(tabla, criterio);
-            resultadosTotales.addAll(resultados);
+            for (Map<String, Object> fila : resultados) {
+                // Añade el nombre de la tabla al mapa de resultados
+                fila.put("Tipo de Documento", tabla);
+                resultadosTotales.add(fila);
+            }
         }
 
         return resultadosTotales;
+    }
+
+  public List<Map<String, Object>> buscarPorCriterioEnTabla(String tabla, String criterio) throws SQLException {
+        List<Map<String, Object>> resultados = documentoDAO.buscarEnTabla(tabla, criterio);
+        for (Map<String, Object> fila : resultados) {
+            // Opcional: Añade información adicional si es necesario
+            fila.put("Tipo de Documento", tabla);
+        }
+        return resultados;
+    }
+  
+  public List<Map<String, Object>> buscarPorCriterioOrdenado(String tabla, String criterio) throws SQLException {
+    List<Map<String, Object>> resultados = documentoDAO.buscarEnTabla(tabla, criterio);
+    List<String> columnasOrdenadas = documentoDAO.obtenerColumnasOrdenadas(tabla);
+
+    // Reordenar los mapas según el orden de las columnas
+    List<Map<String, Object>> resultadosOrdenados = new ArrayList<>();
+    for (Map<String, Object> fila : resultados) {
+        Map<String, Object> filaOrdenada = new LinkedHashMap<>();
+        for (String columna : columnasOrdenadas) {
+            filaOrdenada.put(columna, fila.getOrDefault(columna, null));
+        }
+        resultadosOrdenados.add(filaOrdenada);
+    }
+
+    return resultadosOrdenados;
+}
+
+  
+  public List<String> obtenerNombresTablas() throws SQLException {
+        return documentoDAO.obtenerNombresTablas();
     }
 
     // Busca documentos en todas las tablas que coincidan con el criterio dado.

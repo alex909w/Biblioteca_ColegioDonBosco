@@ -88,14 +88,22 @@ public class PrestamoDAO {
     // Actualiza la disponibilidad de un documento.
 
     public void actualizarDisponibilidadDocumento(String tipoDocumento, String idDocumento, int cantidadCambio) throws SQLException {
-        String sql = "UPDATE " + tipoDocumento + " SET cantidad_disponible = cantidad_disponible + ? WHERE id_libros = ?";
-        try (Connection conexion = ConexionBaseDatos.getConexion();
-             PreparedStatement stmt = conexion.prepareStatement(sql)) {
-            stmt.setInt(1, cantidadCambio);
-            stmt.setString(2, idDocumento);
-            stmt.executeUpdate();
-        }
+    // Obtener dinámicamente el nombre de la columna de ID
+    String nombreColumnaID = obtenerNombreColumnaID(tipoDocumento);
+    if (nombreColumnaID == null || nombreColumnaID.isEmpty()) {
+        throw new SQLException("No se encontró una columna de ID en la tabla: " + tipoDocumento);
     }
+
+    // Construir la consulta SQL con el nombre dinámico de la columna
+    String sql = "UPDATE " + tipoDocumento + " SET cantidad_disponible = cantidad_disponible + ? WHERE " + nombreColumnaID + " = ?";
+    try (Connection conexion = ConexionBaseDatos.getConexion();
+         PreparedStatement stmt = conexion.prepareStatement(sql)) {
+        stmt.setInt(1, cantidadCambio);
+        stmt.setString(2, idDocumento);
+        stmt.executeUpdate();
+    }
+}
+
 
     // Obtiene el límite de préstamos configurado para un rol específico.
 
@@ -224,4 +232,19 @@ public class PrestamoDAO {
         }
         return null;
     }
+
+    private String obtenerNombreColumnaID(String tabla) throws SQLException {
+    String sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND COLUMN_NAME LIKE 'id_%'";
+    try (Connection conexion = ConexionBaseDatos.getConexion();
+         PreparedStatement stmt = conexion.prepareStatement(sql)) {
+        stmt.setString(1, tabla);
+        try (ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getString("COLUMN_NAME");
+            }
+        }
+    }
+    return null;
+}
+
 }
